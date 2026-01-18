@@ -1,40 +1,42 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../store';
-import { Order, OrderStatus, ProductType, Product, Category, PromoCode, Blog, Agreement } from '../types';
+import { Order, OrderStatus, ProductType, Product, PromoCode, PaymentMethod, Blog, Agreement } from '../types';
 import { 
-  Check, X, Eye, Package, CreditCard, ShoppingBag, Settings, Plus, Trash2, LayoutGrid, 
-  BarChart3, LogOut, UploadCloud, FileText, Users, Lock, Send, 
-  Search, Copy, Instagram, Wallet, Smartphone, Link as LinkIcon, FileSpreadsheet, Download,
-  Clock, CheckCircle, XCircle, Loader2, KeyRound, Ban, History, Link2, Menu, Tag, List, Ticket, AlertTriangle, ArrowRightCircle, Database, ScrollText, MessageSquare, LayoutTemplate, Edit3, Infinity
+  BarChart3, ShoppingBag, Package, Users, Settings, LogOut, 
+  Plus, Trash2, Search, Edit3, X, Check, Eye, Wallet, 
+  Database, Infinity, Menu, FileText, MessageSquare, CreditCard, Globe, Shield, Image as ImageIcon, Save
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Admin = () => {
   const navigate = useNavigate();
   const { 
-    user, orders, completeOrder, cancelOrder, processOrder, products, 
-    paymentMethods, updatePaymentMethod, addPaymentMethod, deletePaymentMethod, siteSettings, updateSiteSettings,
-    categories, addCategory, deleteCategory, addProduct, deleteProduct, addProducts,
-    blogs, addBlog, deleteBlog, agreements, addAgreement, deleteAgreement,
-    comments, toggleCommentApproval, deleteComment, logout,
-    usersList, adminUpdateUserPassword, toggleUserBan, generateResetLink, updateUserBalance,
-    promoCodes, addPromoCode, deletePromoCode, togglePromoCode,
+    user, orders, completeOrder, cancelOrder, products, 
+    siteSettings, updateSiteSettings,
+    categories, addCategory, deleteCategory, addProduct, deleteProduct, 
+    addAgreement, deleteAgreement,
+    blogs, addBlog, deleteBlog,
+    paymentMethods, addPaymentMethod, deletePaymentMethod, updatePaymentMethod,
+    comments, deleteComment, logout,
+    usersList, toggleUserBan, updateUserBalance,
+    promoCodes, addPromoCode, deletePromoCode,
     stocks, addStock, deleteStock, activityLogs
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'balance' | 'products' | 'cms_news' | 'cms_pages' | 'cms_reviews' | 'stock' | 'users' | 'marketing' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'stock' | 'users' | 'content' | 'finance' | 'settings'>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // --- STATE MANAGEMENT ---
   
   // Orders
   const [deliveryModal, setDeliveryModal] = useState<{orderId: string, productTitle: string} | null>(null);
-  const [orderDetailsModal, setOrderDetailsModal] = useState<Order | null>(null);
   const [deliveryContent, setDeliveryContent] = useState('');
+  const [orderFilter, setOrderFilter] = useState<'ALL' | OrderStatus>('ALL');
 
   // Products
   const [productView, setProductView] = useState<'list' | 'add'>('list');
   const [productSearch, setProductSearch] = useState('');
+  const [isEditingProd, setIsEditingProd] = useState(false);
   const [productForm, setProductForm] = useState<Partial<Product>>({
     title: '', categoryId: '', price: 0, costPrice: 0, discountPercent: 0, type: ProductType.LICENSE_KEY, image: '', description: '', requiresInput: false, durationDays: 0, isLifetime: false
   });
@@ -46,24 +48,28 @@ const Admin = () => {
 
   // Users
   const [userSearch, setUserSearch] = useState('');
-  const [balanceEdit, setBalanceEdit] = useState<{userId: string, amount: string} | null>(null);
 
-  // CMS - News
+  // Content (News/Rules)
+  const [contentSubTab, setContentSubTab] = useState<'news' | 'rules' | 'comments'>('news');
   const [blogForm, setBlogForm] = useState<{title: string, content: string, image: string}>({ title: '', content: '', image: '' });
-  const blogFileRef = useRef<HTMLInputElement>(null);
+  const [ruleForm, setRuleForm] = useState<{title: string, content: string}>({ title: '', content: '' });
 
-  // CMS - Pages
-  const [pageForm, setPageForm] = useState<{title: string, content: string}>({ title: '', content: '' });
-
-  // Marketing
+  // Finance (Payments/Promo)
+  const [financeSubTab, setFinanceSubTab] = useState<'payments' | 'promos'>('payments');
+  const [payForm, setPayForm] = useState<Partial<PaymentMethod>>({ name: '', details: '', instructions: '', isActive: true, icon: 'credit-card' });
   const [promoForm, setPromoForm] = useState<{code: string, percent: number}>({ code: '', percent: 0 });
 
-  // Categories
+  // Settings (General/Categories)
+  const [settingsSubTab, setSettingsSubTab] = useState<'general' | 'categories'>('general');
+  const [generalForm, setGeneralForm] = useState(siteSettings);
   const [catForm, setCatForm] = useState<{name: string, image: string}>({ name: '', image: '' });
 
-
   if (!user || user.role !== 'admin') {
-    return <div className="p-10 text-center text-red-500 font-bold text-2xl">Access Denied</div>;
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-background text-red-500 font-bold text-2xl">
+            Access Denied
+        </div>
+    );
   }
 
   // --- HELPERS ---
@@ -75,10 +81,12 @@ const Admin = () => {
           switch(type) {
               case 'product': deleteProduct(id); break;
               case 'category': deleteCategory(id); break;
-              case 'blog': deleteBlog(id); break;
-              case 'agreement': deleteAgreement(id); break;
               case 'promo': deletePromoCode(id); break;
               case 'comment': deleteComment(id); break;
+              case 'stock': deleteStock(id); break;
+              case 'blog': deleteBlog(id); break;
+              case 'rule': deleteAgreement(id); break;
+              case 'payment': deletePaymentMethod(id); break;
           }
       }
   };
@@ -87,18 +95,36 @@ const Admin = () => {
       if(e.target.files?.[0]) setter(URL.createObjectURL(e.target.files[0]));
   };
 
-  // --- STATS ---
-  const productOrders = orders.filter(o => !o.items.some(i => i.type === ProductType.BALANCE));
-  const balanceRequests = orders.filter(o => o.items.some(i => i.type === ProductType.BALANCE));
-  const totalRevenue = productOrders.filter(o => o.status === 'COMPLETED').reduce((acc, o) => acc + o.totalPrice, 0);
-  const totalUsers = usersList.length;
-
-  // --- ORDER LOGIC ---
-  const openDeliveryModal = (order: Order) => {
-      setDeliveryModal({ orderId: order.id, productTitle: order.items.map(i => i.title).join(', ') });
-      setDeliveryContent('');
+  // Product Logic
+  const handleEditProduct = (p: Product) => {
+      setProductForm(p);
+      setIsEditingProd(true);
+      setProductView('add');
   };
 
+  const handleSaveProduct = () => {
+      if(!productForm.title || !productForm.price || !productForm.categoryId) {
+          alert("Zəhmət olmasa vacib xanaları doldurun.");
+          return;
+      }
+      const newProduct = { ...productForm, id: isEditingProd ? productForm.id! : `p-${Date.now()}` } as Product;
+      if(isEditingProd) deleteProduct(productForm.id!);
+      addProduct(newProduct);
+      setProductView('list');
+      setProductForm({ title: '', categoryId: '', price: 0, costPrice: 0, discountPercent: 0, type: ProductType.LICENSE_KEY, image: '', description: '', requiresInput: false, durationDays: 0, isLifetime: false });
+      setIsEditingProd(false);
+  };
+
+  // Stock Logic
+  const handleAddStock = () => {
+      if(!stockProduct || !stockInput) return;
+      const codes = stockInput.split('\n').filter(c => c.trim().length > 0);
+      addStock(stockProduct, codes);
+      setStockInput('');
+      alert(`${codes.length} ədəd kod əlavə olundu.`);
+  };
+
+  // Order Logic
   const confirmDelivery = () => {
       if(deliveryModal) {
           completeOrder(deliveryModal.orderId, deliveryContent);
@@ -106,245 +132,249 @@ const Admin = () => {
       }
   };
 
-  // --- CMS LOGIC ---
-  const handleAddBlog = () => {
-      if(blogForm.title && blogForm.content) {
-          addBlog({
-              id: `blog-${Date.now()}`,
-              title: blogForm.title,
-              content: blogForm.content,
-              image: blogForm.image || 'https://via.placeholder.com/600x400',
-              date: new Date().toISOString()
-          });
-          setBlogForm({ title: '', content: '', image: '' });
-          alert("Xəbər əlavə olundu!");
-      }
+  // Settings Logic
+  const saveGeneralSettings = () => {
+      updateSiteSettings(generalForm);
+      alert("Ayarlar yadda saxlanıldı!");
   };
 
-  const handleAddPage = () => {
-      if(pageForm.title && pageForm.content) {
-          addAgreement({
-              id: `ag-${Date.now()}`,
-              title: pageForm.title,
-              content: pageForm.content
-          });
-          setPageForm({ title: '', content: '' });
-      }
-  };
-
-  // --- NAVIGATION CONFIG ---
+  // Menu Items
   const menuItems = [
-      { id: 'dashboard', label: 'Statistika', icon: BarChart3 },
-      { id: 'orders', label: 'Sifarişlər', icon: ShoppingBag, badge: productOrders.filter(o => o.status === 'PENDING').length },
-      { id: 'balance', label: 'Balans Sorğuları', icon: Wallet, badge: balanceRequests.filter(o => o.status === 'PENDING').length },
+      { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+      { id: 'orders', label: 'Sifarişlər', icon: ShoppingBag, badge: orders.filter(o => o.status === 'PENDING').length },
       { id: 'products', label: 'Məhsullar', icon: Package },
-      { id: 'stock', label: 'Stok (Kodlar)', icon: Database },
+      { id: 'stock', label: 'Stok', icon: Database },
       { id: 'users', label: 'İstifadəçilər', icon: Users },
-      { id: 'cms_news', label: 'CMS - Xəbərlər', icon: FileText },
-      { id: 'cms_pages', label: 'CMS - Səhifələr', icon: LayoutTemplate },
-      { id: 'cms_reviews', label: 'Rəylər', icon: MessageSquare, badge: comments.filter(c => !c.isApproved).length },
-      { id: 'marketing', label: 'Marketinq', icon: Ticket },
-      { id: 'settings', label: 'Ayarlar', icon: Settings },
+      { id: 'content', label: 'Məzmun & Rəy', icon: FileText },
+      { id: 'finance', label: 'Maliyyə', icon: CreditCard },
+      { id: 'settings', label: 'Ümumi Ayarlar', icon: Settings },
   ];
 
+  const filteredOrders = orders.filter(o => orderFilter === 'ALL' || o.status === orderFilter);
+
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col md:flex-row font-sans">
+    <div className="min-h-screen bg-background text-white flex flex-col md:flex-row font-sans">
       
       {/* SIDEBAR */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-black border-r border-gray-900 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-200 ease-in-out flex flex-col`}>
-          <div className="p-6 border-b border-gray-900 flex justify-between items-center">
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 glass border-r border-white/10 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-200 ease-in-out flex flex-col`}>
+          <div className="p-6 border-b border-white/10 flex justify-between items-center">
               <span className="text-xl font-black text-white tracking-widest uppercase">Admin</span>
               <button onClick={() => setMobileMenuOpen(false)} className="md:hidden"><X /></button>
           </div>
           
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+          <nav className="flex-1 overflow-y-auto p-4 space-y-2">
               {menuItems.map(item => (
                   <button
                       key={item.id}
                       onClick={() => { setActiveTab(item.id as any); setMobileMenuOpen(false); }}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all ${activeTab === item.id ? 'bg-white text-black font-bold' : 'text-gray-400 hover:bg-gray-900 hover:text-white'}`}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${activeTab === item.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
                   >
                       <div className="flex items-center gap-3">
                           <item.icon className="w-5 h-5" />
-                          <span>{item.label}</span>
+                          <span className="font-medium">{item.label}</span>
                       </div>
                       {item.badge ? <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{item.badge}</span> : null}
                   </button>
               ))}
           </nav>
 
-          <div className="p-4 border-t border-gray-900">
-              <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors font-bold">
+          <div className="p-4 border-t border-white/10">
+              <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors font-bold">
                   <LogOut className="w-5 h-5" /> Çıxış
               </button>
           </div>
       </div>
 
       {/* MOBILE HEADER */}
-      <div className="md:hidden bg-black border-b border-gray-900 p-4 flex justify-between items-center sticky top-0 z-40">
+      <div className="md:hidden glass border-b border-white/10 p-4 flex justify-between items-center sticky top-0 z-40">
           <span className="font-bold text-lg">Admin Panel</span>
           <button onClick={() => setMobileMenuOpen(true)}><Menu /></button>
       </div>
 
       {/* MAIN CONTENT */}
-      <div className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto bg-black">
+      <div className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto bg-background">
           
           {/* DASHBOARD */}
           {activeTab === 'dashboard' && (
               <div className="space-y-6 animate-fade-in">
-                  <h2 className="text-3xl font-bold mb-6">Xoş Gəldin, Admin!</h2>
+                  <h2 className="text-3xl font-bold mb-6">İdarə Paneli</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      <div className="bg-gaming-card p-6 rounded-none border border-gray-800">
-                          <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Ümumi Satış</p>
-                          <p className="text-3xl font-mono font-bold text-white mt-2">{totalRevenue.toFixed(2)} ₼</p>
+                      <div className="glass-card p-6 rounded-2xl">
+                          <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Ümumi Gəlir</p>
+                          <p className="text-3xl font-mono font-bold text-white mt-2">
+                              {orders.filter(o => o.status === 'COMPLETED' && !o.items.some(i => i.type === ProductType.BALANCE)).reduce((acc, o) => acc + o.totalPrice, 0).toFixed(2)} ₼
+                          </p>
                       </div>
-                      <div className="bg-gaming-card p-6 rounded-none border border-gray-800">
+                      <div className="glass-card p-6 rounded-2xl">
                           <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">İstifadəçilər</p>
-                          <p className="text-3xl font-bold text-white mt-2">{totalUsers}</p>
+                          <p className="text-3xl font-bold text-white mt-2">{usersList.length}</p>
                       </div>
-                      <div className="bg-gaming-card p-6 rounded-none border border-gray-800">
+                      <div className="glass-card p-6 rounded-2xl">
                           <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Gözləyən Sifariş</p>
-                          <p className="text-3xl font-bold text-yellow-500 mt-2">{productOrders.filter(o => o.status === 'PENDING').length}</p>
+                          <p className="text-3xl font-bold text-yellow-500 mt-2">{orders.filter(o => o.status === 'PENDING').length}</p>
                       </div>
-                      <div className="bg-gaming-card p-6 rounded-none border border-gray-800">
-                          <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Stokdakı Kodlar</p>
+                      <div className="glass-card p-6 rounded-2xl">
+                          <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Stokda Kodlar</p>
                           <p className="text-3xl font-bold text-blue-500 mt-2">{stocks.filter(s => !s.isUsed).length}</p>
-                      </div>
-                  </div>
-
-                  {/* Activity Logs - Table View */}
-                  <div className="bg-gaming-card rounded-none border border-gray-800 overflow-hidden mt-6">
-                      <div className="p-4 border-b border-gray-800 bg-black flex justify-between items-center">
-                          <h3 className="font-bold uppercase tracking-widest text-sm">Sistem Loqları (Audit)</h3>
-                      </div>
-                      <div className="overflow-x-auto">
-                          <table className="w-full text-left text-sm">
-                              <thead className="bg-black text-gray-500 uppercase text-xs">
-                                  <tr>
-                                      <th className="p-4">Admin/User</th>
-                                      <th className="p-4">Əməliyyat</th>
-                                      <th className="p-4">Təfərrüat</th>
-                                      <th className="p-4">Tarix</th>
-                                  </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-800">
-                                  {activityLogs.slice(0, 20).map(log => (
-                                      <tr key={log.id} className="hover:bg-white/5">
-                                          <td className="p-4 font-bold">{log.adminName}</td>
-                                          <td className={`p-4 font-bold ${log.type === 'error' ? 'text-red-500' : log.type === 'warning' ? 'text-yellow-500' : 'text-blue-500'}`}>
-                                              {log.action}
-                                          </td>
-                                          <td className="p-4 text-gray-300">{log.details}</td>
-                                          <td className="p-4 text-gray-500">{new Date(log.date).toLocaleString()}</td>
-                                      </tr>
-                                  ))}
-                              </tbody>
-                          </table>
                       </div>
                   </div>
               </div>
           )}
 
-          {/* PRODUCTS - Table View */}
+          {/* ORDERS */}
+          {activeTab === 'orders' && (
+              <div className="space-y-6 animate-fade-in">
+                   <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-bold">Sifariş İdarəçiliyi</h2>
+                        <div className="flex bg-white/5 rounded-lg p-1">
+                            {(['ALL', 'PENDING', 'COMPLETED', 'CANCELLED'] as const).map(status => (
+                                <button
+                                    key={status}
+                                    onClick={() => setOrderFilter(status)}
+                                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${orderFilter === status ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'}`}
+                                >
+                                    {status === 'ALL' ? 'HAMISI' : status}
+                                </button>
+                            ))}
+                        </div>
+                   </div>
+
+                   <div className="space-y-4">
+                       {filteredOrders.length === 0 ? <div className="text-center py-12 text-gray-500">Sifariş tapılmadı.</div> : filteredOrders.map(order => (
+                           <div key={order.id} className="glass-card p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center gap-6">
+                               <div className="flex-1">
+                                   <div className="flex items-center gap-2 mb-1">
+                                        <span className="font-mono text-xs text-gray-500">#{order.id.slice(-6)}</span>
+                                        <span className="text-xs text-gray-400">• {new Date(order.date).toLocaleString()}</span>
+                                   </div>
+                                   <h4 className="font-bold text-white text-lg">{order.productTitle}</h4>
+                                   <p className="text-sm text-gray-400">İstifadəçi: <span className="text-white">{order.userId}</span></p>
+                                   <div className="flex gap-2 mt-2 flex-wrap">
+                                        {order.items.map((item, idx) => (
+                                            <span key={idx} className="bg-white/5 px-2 py-1 rounded text-xs text-gray-300">
+                                                {item.title} (x{item.quantity}) {item.userInput ? `- ${item.userInput}` : ''}
+                                            </span>
+                                        ))}
+                                   </div>
+                                   {order.receiptImage && (
+                                       <a href={order.receiptImage} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary mt-2 hover:underline">
+                                           <Eye className="w-3 h-3"/> Qəbzə Bax
+                                       </a>
+                                   )}
+                               </div>
+                               <div className="text-right min-w-[120px]">
+                                   <p className="text-2xl font-bold text-white">{order.totalPrice.toFixed(2)} ₼</p>
+                                   <p className="text-xs text-gray-400 mb-2">{order.paymentMethodName}</p>
+                                   <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${order.status === 'COMPLETED' ? 'bg-green-500/20 text-green-400' : order.status === 'PENDING' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
+                                       {order.status}
+                                   </span>
+                               </div>
+                               {order.status === 'PENDING' && (
+                                   <div className="flex flex-col gap-2 min-w-[140px]">
+                                        <button onClick={() => { setDeliveryModal({ orderId: order.id, productTitle: order.productTitle || 'Məhsul' }); setDeliveryContent(''); }} className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors">
+                                            <Check className="w-4 h-4" /> Təsdiqlə
+                                        </button>
+                                        <button onClick={() => { if(window.confirm('Ləğv edilsin?')) cancelOrder(order.id); }} className="bg-red-500/10 hover:bg-red-500/20 text-red-400 px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors">
+                                            <X className="w-4 h-4" /> Ləğv Et
+                                        </button>
+                                   </div>
+                               )}
+                           </div>
+                       ))}
+                   </div>
+              </div>
+          )}
+
+          {/* PRODUCTS */}
           {activeTab === 'products' && (
               <div className="space-y-6 animate-fade-in">
                   <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-xl font-bold">Məhsul İdarəçiliyi</h3>
-                      <button onClick={() => setProductView(productView === 'list' ? 'add' : 'list')} className="bg-white text-black px-4 py-2 rounded-lg font-bold uppercase text-xs tracking-wider">
-                          {productView === 'list' ? '+ Yeni Məhsul' : 'Siyahıya Qayıt'}
+                      <h3 className="text-2xl font-bold">Məhsullar</h3>
+                      <button onClick={() => { setProductView(productView === 'list' ? 'add' : 'list'); setIsEditingProd(false); setProductForm({ title: '', categoryId: '', price: 0, costPrice: 0, discountPercent: 0, type: ProductType.LICENSE_KEY, image: '', description: '', requiresInput: false, durationDays: 0, isLifetime: false }); }} className="bg-white text-black px-6 py-2 rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center gap-2">
+                          {productView === 'list' ? <><Plus className="w-4 h-4"/> Yeni Məhsul</> : 'Siyahıya Qayıt'}
                       </button>
                   </div>
 
                   {productView === 'add' ? (
-                      <div className="bg-gaming-card p-6 rounded-none border border-gray-800">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="glass-card p-8 rounded-2xl border border-white/10">
+                          <h4 className="text-lg font-bold mb-6 text-primary">{isEditingProd ? 'Redaktə Et' : 'Yeni Məhsul'}</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                               <div className="space-y-4">
-                                  <label className="block text-xs uppercase font-bold text-gray-500">Məhsul Adı</label>
-                                  <input className="w-full bg-black border border-gray-700 p-3 text-white focus:border-white outline-none" value={productForm.title} onChange={e => setProductForm({...productForm, title: e.target.value})} />
-                                  
+                                  <div>
+                                    <label className="block text-xs uppercase font-bold text-gray-400 mb-1">Məhsul Adı</label>
+                                    <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white focus:border-primary outline-none" value={productForm.title} onChange={e => setProductForm({...productForm, title: e.target.value})} />
+                                  </div>
                                   <div className="grid grid-cols-2 gap-4">
                                       <div>
-                                          <label className="block text-xs uppercase font-bold text-gray-500">Qiymət (AZN)</label>
-                                          <input type="number" className="w-full bg-black border border-gray-700 p-3 text-white focus:border-white outline-none" value={productForm.price} onChange={e => setProductForm({...productForm, price: parseFloat(e.target.value)})} />
+                                          <label className="block text-xs uppercase font-bold text-gray-400 mb-1">Satış Qiyməti (AZN)</label>
+                                          <input type="number" className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white focus:border-primary outline-none" value={productForm.price} onChange={e => setProductForm({...productForm, price: parseFloat(e.target.value)})} />
                                       </div>
                                       <div>
-                                          <label className="block text-xs uppercase font-bold text-gray-500">Kateqoriya</label>
-                                          <select className="w-full bg-black border border-gray-700 p-3 text-white focus:border-white outline-none" value={productForm.categoryId} onChange={e => setProductForm({...productForm, categoryId: e.target.value})}>
+                                          <label className="block text-xs uppercase font-bold text-gray-400 mb-1">Kateqoriya</label>
+                                          <select className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white focus:border-primary outline-none" value={productForm.categoryId} onChange={e => setProductForm({...productForm, categoryId: e.target.value})}>
                                               <option value="">Seçin</option>
                                               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                           </select>
                                       </div>
                                   </div>
-                                  <div className="border-2 border-dashed border-gray-700 h-32 flex items-center justify-center cursor-pointer hover:bg-white/5" onClick={() => prodFileRef.current?.click()}>
-                                      {productForm.image ? <img src={productForm.image} className="h-full w-full object-contain"/> : <span className="text-gray-500 text-xs uppercase">Şəkil Seç</span>}
+                                  <div className="border-2 border-dashed border-white/10 rounded-xl h-40 flex items-center justify-center cursor-pointer hover:bg-white/5 transition-colors overflow-hidden relative" onClick={() => prodFileRef.current?.click()}>
+                                      {productForm.image ? <img src={productForm.image} className="h-full w-full object-cover"/> : <div className="text-center"><div className="bg-white/10 p-3 rounded-full inline-block mb-2"><Plus className="w-6 h-6 text-gray-400"/></div><p className="text-gray-500 text-xs uppercase font-bold">Şəkil Seçin</p></div>}
                                       <input type="file" hidden ref={prodFileRef} onChange={e => handleImageUpload(e, url => setProductForm({...productForm, image: url}))} />
                                   </div>
                               </div>
                               <div className="space-y-4">
-                                  <label className="block text-xs uppercase font-bold text-gray-500">Tip</label>
-                                  <select className="w-full bg-black border border-gray-700 p-3 text-white focus:border-white outline-none" value={productForm.type} onChange={e => setProductForm({...productForm, type: e.target.value as ProductType})}>
-                                      <option value={ProductType.LICENSE_KEY}>License Key</option>
-                                      <option value={ProductType.ACCOUNT}>Account</option>
-                                      <option value={ProductType.ID_LOAD}>ID Load</option>
-                                  </select>
-                                  
-                                  <div className="bg-black p-3 border border-gray-700 flex items-center gap-3">
-                                      <input 
-                                        type="checkbox" 
-                                        id="isLifetime"
-                                        checked={productForm.isLifetime} 
-                                        onChange={e => setProductForm({...productForm, isLifetime: e.target.checked})}
-                                        className="w-4 h-4 bg-black border-gray-500 accent-white"
-                                      />
-                                      <label htmlFor="isLifetime" className="text-sm font-bold flex items-center gap-2"><Infinity className="w-4 h-4" /> Ömürlük Lisenziya</label>
+                                  <div>
+                                    <label className="block text-xs uppercase font-bold text-gray-400 mb-1">Məhsul Tipi</label>
+                                    <select className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white focus:border-primary outline-none" value={productForm.type} onChange={e => setProductForm({...productForm, type: e.target.value as ProductType})}>
+                                        <option value={ProductType.LICENSE_KEY}>License Key</option>
+                                        <option value={ProductType.ACCOUNT}>Account</option>
+                                        <option value={ProductType.ID_LOAD}>ID Load</option>
+                                    </select>
                                   </div>
-
-                                  {!productForm.isLifetime && (
-                                    <>
-                                        <label className="block text-xs uppercase font-bold text-gray-500">Müddət (Gün)</label>
-                                        <input type="number" className="w-full bg-black border border-gray-700 p-3 text-white focus:border-white outline-none" value={productForm.durationDays || 0} onChange={e => setProductForm({...productForm, durationDays: parseInt(e.target.value)})} placeholder="0" />
-                                    </>
+                                  <div className="bg-surfaceHighlight p-4 rounded-xl border border-white/10 flex items-center gap-3">
+                                      <input type="checkbox" id="isLifetime" checked={productForm.isLifetime} onChange={e => setProductForm({...productForm, isLifetime: e.target.checked})} className="w-5 h-5 rounded border-white/20 bg-black checked:bg-primary" />
+                                      <label htmlFor="isLifetime" className="text-sm font-bold flex items-center gap-2 cursor-pointer"><Infinity className="w-4 h-4 text-primary" /> Ömürlük Lisenziya</label>
+                                  </div>
+                                  <div className="bg-surfaceHighlight p-4 rounded-xl border border-white/10 flex items-center gap-3">
+                                      <input type="checkbox" id="requiresInput" checked={productForm.requiresInput} onChange={e => setProductForm({...productForm, requiresInput: e.target.checked})} className="w-5 h-5 rounded border-white/20 bg-black checked:bg-primary" />
+                                      <label htmlFor="requiresInput" className="text-sm font-bold flex items-center gap-2 cursor-pointer"><Edit3 className="w-4 h-4 text-primary" /> Müştəri Məlumatı Tələb Et</label>
+                                  </div>
+                                  {productForm.requiresInput && (
+                                      <div>
+                                          <label className="block text-xs uppercase font-bold text-gray-400 mb-1">Input Label</label>
+                                          <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white focus:border-primary outline-none" value={productForm.inputLabel || ''} onChange={e => setProductForm({...productForm, inputLabel: e.target.value})} placeholder="Məs: Hesab ID" />
+                                      </div>
                                   )}
-
-                                  <textarea className="w-full h-24 bg-black border border-gray-700 p-3 text-white resize-none focus:border-white outline-none" placeholder="Təsvir..." value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})}></textarea>
-                                  <button onClick={() => {
-                                      addProduct({...productForm, id: `p-${Date.now()}`} as Product);
-                                      setProductView('list');
-                                      setProductForm({ title: '', categoryId: '', price: 0, costPrice: 0, discountPercent: 0, type: ProductType.LICENSE_KEY, image: '', description: '', requiresInput: false, durationDays: 0, isLifetime: false });
-                                  }} className="w-full bg-white font-bold py-3 text-black uppercase tracking-widest hover:bg-gray-200">Yadda Saxla</button>
+                                  <textarea className="w-full h-24 bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white resize-none focus:border-primary outline-none" placeholder="Təsvir..." value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})}></textarea>
+                                  <button onClick={handleSaveProduct} className="w-full bg-primary hover:bg-primary-dark font-bold py-4 rounded-xl text-white uppercase tracking-widest transition-colors shadow-lg shadow-primary/20">{isEditingProd ? 'Yenilə' : 'Əlavə Et'}</button>
                               </div>
                           </div>
                       </div>
                   ) : (
-                      <div className="bg-gaming-card rounded-none border border-gray-800 overflow-hidden">
-                          <input 
-                              placeholder="Məhsul Axtar..." 
-                              className="w-full bg-black p-4 text-white border-b border-gray-800 focus:outline-none placeholder-gray-600"
-                              value={productSearch}
-                              onChange={e => setProductSearch(e.target.value)}
-                          />
+                      <div className="glass-card rounded-2xl overflow-hidden border border-white/10">
+                          <div className="p-4 border-b border-white/10">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-3.5 text-gray-500 w-4 h-4" />
+                                <input placeholder="Məhsul Axtar..." className="w-full bg-surfaceHighlight rounded-xl pl-10 pr-4 py-3 text-white border border-white/5 focus:border-primary outline-none placeholder-gray-500 transition-colors" value={productSearch} onChange={e => setProductSearch(e.target.value)} />
+                            </div>
+                          </div>
                           <div className="overflow-x-auto">
                               <table className="w-full text-left">
-                                  <thead className="bg-black text-gray-500 text-xs uppercase">
-                                      <tr>
-                                          <th className="p-4">Şəkil</th>
-                                          <th className="p-4">Ad</th>
-                                          <th className="p-4">Qiymət</th>
-                                          <th className="p-4">Müddət</th>
-                                          <th className="p-4 text-right">Əməliyyat</th>
-                                      </tr>
+                                  <thead className="bg-white/5 text-gray-400 text-xs uppercase">
+                                      <tr><th className="p-4">Şəkil</th><th className="p-4">Ad</th><th className="p-4">Qiymət</th><th className="p-4">Tip</th><th className="p-4 text-right">Əməliyyat</th></tr>
                                   </thead>
-                                  <tbody className="divide-y divide-gray-800 text-sm">
+                                  <tbody className="divide-y divide-white/5 text-sm">
                                       {products.filter(p => p.title.toLowerCase().includes(productSearch.toLowerCase())).map(p => (
-                                          <tr key={p.id} className="hover:bg-white/5">
-                                              <td className="p-4"><img src={p.image} className="w-10 h-10 object-cover grayscale bg-black border border-gray-800"/></td>
-                                              <td className="p-4 font-bold text-white">{p.title}</td>
-                                              <td className="p-4 text-white font-mono">{p.price} ₼</td>
-                                              <td className="p-4 text-gray-400">
-                                                  {p.isLifetime ? <span className="flex items-center gap-1"><Infinity className="w-3 h-3"/> Ömürlük</span> : `${p.durationDays} gün`}
-                                              </td>
+                                          <tr key={p.id} className="hover:bg-white/5 transition-colors">
+                                              <td className="p-4"><img src={p.image} className="w-12 h-12 rounded-lg object-cover bg-surfaceHighlight border border-white/10"/></td>
+                                              <td className="p-4"><p className="font-bold text-white">{p.title}</p>{p.stockCount !== undefined && <p className="text-xs text-gray-500">Stok: {p.stockCount}</p>}</td>
+                                              <td className="p-4 text-primary font-bold">{p.price.toFixed(2)} ₼</td>
+                                              <td className="p-4 text-gray-400">{p.type}</td>
                                               <td className="p-4 text-right">
-                                                  <button onClick={() => handleDelete('product', p.id)} className="text-red-500 hover:bg-red-500/10 p-2 rounded"><Trash2 className="w-4 h-4"/></button>
+                                                  <div className="flex items-center justify-end gap-2">
+                                                      <button onClick={() => handleEditProduct(p)} className="p-2 bg-white/10 rounded-lg hover:bg-white hover:text-black transition-colors"><Edit3 className="w-4 h-4"/></button>
+                                                      <button onClick={() => handleDelete('product', p.id)} className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-colors"><Trash2 className="w-4 h-4"/></button>
+                                                  </div>
                                               </td>
                                           </tr>
                                       ))}
@@ -356,114 +386,307 @@ const Admin = () => {
               </div>
           )}
 
-          {/* ... (Rest of Admin Panel code remains mostly same structure but needs B&W styling if rendering specific colors) ... */}
-          {/* I am truncating the rest for brevity as the user asked for logic changes primarily, but the full file content should be provided in real context. 
-              Assuming the rest of the Admin logic uses standard Tailwind classes that were globally overridden or specific colors that I should fix below:
-          */}
-           {/* ORDERS & BALANCE (Simplified View for this updated admin) */}
-          {(activeTab === 'orders' || activeTab === 'balance') && (
-              <div className="space-y-4 animate-fade-in">
-                  {(activeTab === 'orders' ? productOrders : balanceRequests).map(order => (
-                      <div key={order.id} className="bg-gaming-card p-4 rounded-none border border-gray-800 flex flex-col md:flex-row items-center gap-4">
-                          <div className="flex-1 text-center md:text-left">
-                              <p className="font-bold text-white">{order.items.map(i => i.title).join(', ')}</p>
-                              <p className="text-xs text-gray-400">{order.userId} • {order.totalPrice} ₼</p>
-                              <span className={`text-[10px] px-2 py-0.5 font-bold uppercase ${order.status === 'COMPLETED' ? 'bg-green-500/20 text-green-500' : 'bg-yellow-500/20 text-yellow-500'}`}>{order.status}</span>
-                          </div>
-                          {order.status === 'PENDING' && (
-                              <div className="flex gap-2">
-                                  <button onClick={() => openDeliveryModal(order)} className="bg-white text-black px-4 py-2 rounded-sm font-bold text-xs uppercase hover:bg-gray-200">Təsdiqlə</button>
-                                  <button onClick={() => cancelOrder(order.id)} className="border border-red-500 text-red-500 px-4 py-2 rounded-sm font-bold text-xs uppercase hover:bg-red-500 hover:text-white">Ləğv</button>
-                              </div>
-                          )}
-                          <button onClick={() => setOrderDetailsModal(order)} className="p-2 bg-gray-800 rounded text-gray-300 hover:bg-white hover:text-black"><Eye className="w-4 h-4"/></button>
-                      </div>
-                  ))}
-              </div>
-          )}
-
-          {/* MARKETING (Promos) */}
-          {activeTab === 'marketing' && (
+          {/* STOCK */}
+          {activeTab === 'stock' && (
               <div className="space-y-6 animate-fade-in">
-                  <div className="bg-gaming-card p-6 rounded-none border border-gray-800 flex gap-4 items-end">
-                      <div className="flex-1">
-                          <label className="text-xs text-gray-400 uppercase font-bold">Promo Kod</label>
-                          <input className="w-full bg-black border border-gray-700 p-2 text-white uppercase focus:border-white outline-none" value={promoForm.code} onChange={e => setPromoForm({...promoForm, code: e.target.value})} />
-                      </div>
-                      <div className="w-32">
-                          <label className="text-xs text-gray-400 uppercase font-bold">Faiz (%)</label>
-                          <input type="number" className="w-full bg-black border border-gray-700 p-2 text-white focus:border-white outline-none" value={promoForm.percent} onChange={e => setPromoForm({...promoForm, percent: parseInt(e.target.value)})} />
-                      </div>
-                      <button onClick={() => { 
-                          if(promoForm.code && promoForm.percent) {
-                              addPromoCode({ id: `pr-${Date.now()}`, code: promoForm.code, discountPercent: promoForm.percent, isActive: true });
-                              setPromoForm({code: '', percent: 0});
-                          }
-                      }} className="bg-white text-black font-bold px-6 py-2 h-10 uppercase text-xs">Yarat</button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {promoCodes.map(p => (
-                          <div key={p.id} className="bg-gaming-card p-4 border border-gray-800 flex justify-between items-center">
-                              <div>
-                                  <p className="font-bold text-white text-lg tracking-widest">{p.code}</p>
-                                  <p className="text-gray-400 font-bold">{p.discountPercent}% ENDİRİM</p>
-                              </div>
-                              <button onClick={() => handleDelete('promo', p.id)} className="text-red-500"><Trash2 className="w-5 h-5"/></button>
+                  <div className="glass-card p-6 rounded-2xl border border-white/10">
+                      <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Database className="text-primary"/> Stok Əlavə Et</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                              <label className="block text-xs uppercase font-bold text-gray-400 mb-2">Məhsul Seçin</label>
+                              <select className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white focus:border-primary outline-none" value={stockProduct} onChange={e => setStockProduct(e.target.value)}>
+                                  <option value="">Seçin...</option>
+                                  {products.filter(p => p.type === ProductType.LICENSE_KEY || p.type === ProductType.ACCOUNT).map(p => (
+                                      <option key={p.id} value={p.id}>{p.title} (Cari: {stocks.filter(s => s.productId === p.id && !s.isUsed).length})</option>
+                                  ))}
+                              </select>
                           </div>
-                      ))}
+                          <div>
+                              <label className="block text-xs uppercase font-bold text-gray-400 mb-2">Kodlar / Məlumatlar</label>
+                              <textarea className="w-full h-32 bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white focus:border-primary outline-none font-mono text-sm" placeholder={`Hər sətirə bir kod.\nAAAA-BBBB-CCCC`} value={stockInput} onChange={e => setStockInput(e.target.value)}></textarea>
+                              <button onClick={handleAddStock} disabled={!stockProduct || !stockInput} className="mt-3 w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50">Stoka Əlavə Et</button>
+                          </div>
+                      </div>
+                  </div>
+                  <div className="glass-card rounded-2xl overflow-hidden border border-white/10">
+                      <div className="p-4 border-b border-white/10 bg-white/5"><h4 className="font-bold text-sm uppercase">Mövcud Stoklar</h4></div>
+                      <div className="overflow-x-auto">
+                          <table className="w-full text-left text-sm">
+                              <thead className="bg-white/5 text-gray-400 uppercase text-xs"><tr><th className="p-4">Məhsul</th><th className="p-4">Kod</th><th className="p-4">Status</th><th className="p-4 text-right">Sil</th></tr></thead>
+                              <tbody className="divide-y divide-white/5">
+                                  {stocks.map(stock => {
+                                      const prod = products.find(p => p.id === stock.productId);
+                                      return (
+                                          <tr key={stock.id} className="hover:bg-white/5">
+                                              <td className="p-4 font-bold text-gray-300">{prod?.title || 'Unknown'}</td>
+                                              <td className="p-4 font-mono text-xs">{stock.code}</td>
+                                              <td className="p-4">{stock.isUsed ? <span className="text-red-400 text-xs font-bold">İSTİFADƏ OLUNUB</span> : <span className="text-green-400 text-xs font-bold">AKTİV</span>}</td>
+                                              <td className="p-4 text-right"><button onClick={() => handleDelete('stock', stock.id)} className="text-red-500 hover:text-white"><X className="w-4 h-4"/></button></td>
+                                          </tr>
+                                      );
+                                  })}
+                              </tbody>
+                          </table>
+                      </div>
                   </div>
               </div>
           )}
 
-          {/* SETTINGS (Categories as Table) */}
-          {activeTab === 'settings' && (
-              <div className="space-y-8 animate-fade-in">
-                  <div className="bg-gaming-card p-6 rounded-none border border-gray-800">
-                      <h3 className="font-bold text-xl mb-4">Kateqoriyalar</h3>
-                      <div className="flex gap-4 mb-6">
-                          <input className="flex-1 bg-black border border-gray-700 px-4 focus:border-white outline-none text-white" placeholder="Kateqoriya adı" value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} />
-                          <button onClick={() => { if(catForm.name) { addCategory({id: `c-${Date.now()}`, name: catForm.name}); setCatForm({name: '', image: ''}); }}} className="bg-blue-600 text-white px-4 font-bold uppercase text-xs">Əlavə Et</button>
+          {/* USERS */}
+          {activeTab === 'users' && (
+              <div className="space-y-6 animate-fade-in">
+                  <div className="glass-card p-6 rounded-2xl border border-white/10">
+                      <div className="flex justify-between items-center gap-4 mb-6">
+                           <h3 className="text-xl font-bold flex items-center gap-2"><Users className="text-primary"/> İstifadəçilər</h3>
+                           <div className="relative w-full md:w-64">
+                               <Search className="absolute left-3 top-3 text-gray-500 w-4 h-4" />
+                               <input className="w-full bg-surfaceHighlight rounded-xl pl-10 pr-4 py-2 text-white border border-white/5 focus:border-primary outline-none" placeholder="Email və ya ad axtar..." value={userSearch} onChange={e => setUserSearch(e.target.value)} />
+                           </div>
                       </div>
-                      
-                      <table className="w-full text-left text-sm border-collapse">
-                          <thead className="bg-black text-gray-500 border-b border-gray-800 uppercase text-xs">
-                              <tr>
-                                  <th className="p-3">ID</th>
-                                  <th className="p-3">Ad</th>
-                                  <th className="p-3 text-right">Əməliyyat</th>
-                              </tr>
-                          </thead>
-                          <tbody>
-                              {categories.map(c => (
-                                  <tr key={c.id} className="border-b border-gray-800 hover:bg-white/5">
-                                      <td className="p-3 text-gray-500 font-mono">{c.id}</td>
-                                      <td className="p-3 font-bold text-white">{c.name}</td>
-                                      <td className="p-3 text-right">
-                                          <button onClick={() => handleDelete('category', c.id)} className="text-red-500 hover:text-white"><Trash2 className="w-4 h-4"/></button>
-                                      </td>
-                                  </tr>
-                              ))}
-                          </tbody>
-                      </table>
+                      <div className="overflow-x-auto">
+                          <table className="w-full text-left text-sm">
+                              <thead className="bg-white/5 text-gray-400 uppercase text-xs"><tr><th className="p-4">İstifadəçi</th><th className="p-4">Balans</th><th className="p-4">Status</th><th className="p-4 text-right">Əməliyyat</th></tr></thead>
+                              <tbody className="divide-y divide-white/5">
+                                  {usersList.filter(u => u.name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.includes(userSearch)).map(u => (
+                                      <tr key={u.id} className="hover:bg-white/5">
+                                          <td className="p-4">
+                                              <p className="font-bold text-white">{u.name}</p>
+                                              <p className="text-xs text-gray-500">{u.email}</p>
+                                          </td>
+                                          <td className="p-4 font-mono font-bold text-primary">{u.balance.toFixed(2)} ₼</td>
+                                          <td className="p-4">{u.isBanned ? <span className="text-red-500 font-bold text-xs">BANNED</span> : <span className="text-green-500 font-bold text-xs">AKTİV</span>}</td>
+                                          <td className="p-4 text-right flex justify-end gap-2">
+                                              <button onClick={() => { const amount = prompt("Artırılacaq məbləğ:"); if(amount) updateUserBalance(u.id, parseFloat(amount)); }} className="p-2 bg-green-500/10 text-green-400 rounded"><Wallet className="w-4 h-4"/></button>
+                                              <button onClick={() => toggleUserBan(u.id)} className="p-2 bg-red-500/10 text-red-400 rounded"><Shield className="w-4 h-4"/></button>
+                                          </td>
+                                      </tr>
+                                  ))}
+                              </tbody>
+                          </table>
+                      </div>
+                  </div>
+              </div>
+          )}
+
+          {/* CONTENT (News, Rules, Comments) */}
+          {activeTab === 'content' && (
+              <div className="space-y-6 animate-fade-in">
+                  <div className="flex gap-4 mb-6 border-b border-white/10 pb-2">
+                      <button onClick={() => setContentSubTab('news')} className={`pb-2 px-4 font-bold ${contentSubTab === 'news' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}>Xəbərlər</button>
+                      <button onClick={() => setContentSubTab('rules')} className={`pb-2 px-4 font-bold ${contentSubTab === 'rules' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}>Qaydalar</button>
+                      <button onClick={() => setContentSubTab('comments')} className={`pb-2 px-4 font-bold ${contentSubTab === 'comments' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}>Rəylər</button>
                   </div>
 
-                  <div className="bg-gaming-card p-6 rounded-none border border-gray-800">
-                      <h3 className="font-bold text-xl mb-4">Sayt Məlumatları</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                              <label className="text-xs text-gray-400 uppercase font-bold">Sayt Adı</label>
-                              <input className="w-full bg-black border border-gray-700 p-2 text-white focus:border-white outline-none" value={siteSettings.siteName} onChange={e => updateSiteSettings({siteName: e.target.value})} />
+                  {contentSubTab === 'news' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="glass-card p-6 rounded-2xl border border-white/10">
+                              <h4 className="font-bold mb-4">Yeni Xəbər</h4>
+                              <div className="space-y-3">
+                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Başlıq" value={blogForm.title} onChange={e => setBlogForm({...blogForm, title: e.target.value})} />
+                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Şəkil URL" value={blogForm.image} onChange={e => setBlogForm({...blogForm, image: e.target.value})} />
+                                  <textarea className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white h-32" placeholder="Məzmun" value={blogForm.content} onChange={e => setBlogForm({...blogForm, content: e.target.value})}></textarea>
+                                  <button onClick={() => { addBlog({id: `b-${Date.now()}`, date: new Date().toISOString(), ...blogForm}); setBlogForm({title:'',content:'',image:''}); }} className="w-full bg-primary py-3 rounded-xl font-bold">Paylaş</button>
+                              </div>
                           </div>
-                          <div>
-                              <label className="text-xs text-gray-400 uppercase font-bold">Whatsapp</label>
-                              <input className="w-full bg-black border border-gray-700 p-2 text-white focus:border-white outline-none" value={siteSettings.whatsappNumber} onChange={e => updateSiteSettings({whatsappNumber: e.target.value})} />
-                          </div>
-                          <div>
-                              <label className="text-xs text-gray-400 uppercase font-bold">Footer Mətni</label>
-                              <input className="w-full bg-black border border-gray-700 p-2 text-white focus:border-white outline-none" value={siteSettings.footerText} onChange={e => updateSiteSettings({footerText: e.target.value})} />
+                          <div className="space-y-4">
+                              {blogs.map(b => (
+                                  <div key={b.id} className="glass-card p-4 rounded-xl flex gap-4 items-center">
+                                      <img src={b.image} className="w-16 h-16 rounded object-cover" />
+                                      <div className="flex-1">
+                                          <h5 className="font-bold">{b.title}</h5>
+                                          <p className="text-xs text-gray-400 truncate">{b.content}</p>
+                                      </div>
+                                      <button onClick={() => handleDelete('blog', b.id)} className="text-red-500"><Trash2 className="w-4 h-4"/></button>
+                                  </div>
+                              ))}
                           </div>
                       </div>
+                  )}
+
+                  {contentSubTab === 'rules' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="glass-card p-6 rounded-2xl border border-white/10">
+                              <h4 className="font-bold mb-4">Qayda / Razılaşma Əlavə Et</h4>
+                              <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white mb-3" placeholder="Başlıq" value={ruleForm.title} onChange={e => setRuleForm({...ruleForm, title: e.target.value})} />
+                              <textarea className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white h-64 mb-3" placeholder="Məzmun" value={ruleForm.content} onChange={e => setRuleForm({...ruleForm, content: e.target.value})}></textarea>
+                              <button onClick={() => { addAgreement({id: `a-${Date.now()}`, ...ruleForm}); setRuleForm({title:'',content:''}); }} className="w-full bg-primary py-3 rounded-xl font-bold">Əlavə Et</button>
+                          </div>
+                          <div className="space-y-4">
+                              {useApp().agreements.map(a => (
+                                  <div key={a.id} className="glass-card p-4 rounded-xl">
+                                      <div className="flex justify-between items-center mb-2">
+                                          <h5 className="font-bold text-primary">{a.title}</h5>
+                                          <button onClick={() => handleDelete('rule', a.id)} className="text-red-500"><Trash2 className="w-4 h-4"/></button>
+                                      </div>
+                                      <p className="text-xs text-gray-400 line-clamp-3">{a.content}</p>
+                                  </div>
+                              ))}
+                          </div>
+                      </div>
+                  )}
+
+                  {contentSubTab === 'comments' && (
+                      <div className="glass-card p-6 rounded-2xl border border-white/10">
+                          <h4 className="font-bold mb-4">İstifadəçi Rəyləri</h4>
+                          <div className="space-y-4">
+                              {comments.length === 0 ? <p className="text-gray-500">Rəy yoxdur.</p> : comments.map(c => (
+                                  <div key={c.id} className="border-b border-white/10 pb-4 flex justify-between items-start">
+                                      <div>
+                                          <p className="font-bold text-white text-sm">{c.author} <span className="text-yellow-500 ml-2">★ {c.rating}</span></p>
+                                          <p className="text-gray-300 text-sm mt-1">"{c.content}"</p>
+                                          <p className="text-xs text-gray-500 mt-1">{new Date(c.date).toLocaleString()} • Product: {products.find(p=>p.id===c.targetId)?.title}</p>
+                                      </div>
+                                      <button onClick={() => handleDelete('comment', c.id)} className="text-red-500 hover:bg-red-500/10 p-2 rounded"><Trash2 className="w-4 h-4"/></button>
+                                  </div>
+                              ))}
+                          </div>
+                      </div>
+                  )}
+              </div>
+          )}
+
+          {/* FINANCE (Payments, Promos) */}
+          {activeTab === 'finance' && (
+              <div className="space-y-6 animate-fade-in">
+                   <div className="flex gap-4 mb-6 border-b border-white/10 pb-2">
+                      <button onClick={() => setFinanceSubTab('payments')} className={`pb-2 px-4 font-bold ${financeSubTab === 'payments' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}>Ödəniş Üsulları</button>
+                      <button onClick={() => setFinanceSubTab('promos')} className={`pb-2 px-4 font-bold ${financeSubTab === 'promos' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}>Promo Kodlar</button>
                   </div>
+
+                  {financeSubTab === 'payments' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="glass-card p-6 rounded-2xl border border-white/10">
+                              <h4 className="font-bold mb-4">Yeni Ödəniş Üsulu</h4>
+                              <div className="space-y-3">
+                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Ad (Məs: Birbank)" value={payForm.name} onChange={e => setPayForm({...payForm, name: e.target.value})} />
+                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Detallar (Kart nömrəsi)" value={payForm.details} onChange={e => setPayForm({...payForm, details: e.target.value})} />
+                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Təlimat (Qeyd)" value={payForm.instructions} onChange={e => setPayForm({...payForm, instructions: e.target.value})} />
+                                  <button onClick={() => { addPaymentMethod({id: `pm-${Date.now()}`, ...payForm} as PaymentMethod); setPayForm({name:'', details:'', instructions:'', isActive:true, icon:'credit-card'}); }} className="w-full bg-primary py-3 rounded-xl font-bold">Əlavə Et</button>
+                              </div>
+                          </div>
+                          <div className="space-y-4">
+                              {paymentMethods.map(pm => (
+                                  <div key={pm.id} className="glass-card p-4 rounded-xl flex justify-between items-center">
+                                      <div>
+                                          <p className="font-bold text-white">{pm.name}</p>
+                                          <p className="text-xs text-gray-400 font-mono">{pm.details}</p>
+                                      </div>
+                                      <div className="flex gap-2">
+                                          <button onClick={() => updatePaymentMethod(pm.id, { isActive: !pm.isActive })} className={`px-2 py-1 rounded text-xs font-bold ${pm.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{pm.isActive ? 'Aktiv' : 'Deaktiv'}</button>
+                                          <button onClick={() => handleDelete('payment', pm.id)} className="text-red-500"><Trash2 className="w-4 h-4"/></button>
+                                      </div>
+                                  </div>
+                              ))}
+                          </div>
+                      </div>
+                  )}
+
+                  {financeSubTab === 'promos' && (
+                      <div className="glass-card p-6 rounded-2xl border border-white/10">
+                          <h4 className="font-bold mb-4">Promo Kodlar</h4>
+                          <div className="flex gap-4 mb-6">
+                              <input className="flex-1 bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white uppercase" placeholder="Kod" value={promoForm.code} onChange={e => setPromoForm({...promoForm, code: e.target.value})} />
+                              <input type="number" className="w-32 bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Faiz" value={promoForm.percent} onChange={e => setPromoForm({...promoForm, percent: parseInt(e.target.value)})} />
+                              <button onClick={() => { addPromoCode({id: `pr-${Date.now()}`, code: promoForm.code, discountPercent: promoForm.percent, isActive: true}); setPromoForm({code:'', percent:0}); }} className="bg-white text-black px-6 rounded-xl font-bold">Yarat</button>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                              {promoCodes.map(p => (
+                                  <div key={p.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex justify-between items-center">
+                                      <div><p className="font-bold">{p.code}</p><p className="text-primary text-xs font-bold">{p.discountPercent}%</p></div>
+                                      <button onClick={() => handleDelete('promo', p.id)} className="text-red-500"><Trash2 className="w-4 h-4"/></button>
+                                  </div>
+                              ))}
+                          </div>
+                      </div>
+                  )}
+              </div>
+          )}
+
+          {/* SETTINGS (Global, Categories) */}
+          {activeTab === 'settings' && (
+              <div className="space-y-6 animate-fade-in">
+                  <div className="flex gap-4 mb-6 border-b border-white/10 pb-2">
+                      <button onClick={() => setSettingsSubTab('general')} className={`pb-2 px-4 font-bold ${settingsSubTab === 'general' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}>Ümumi Ayarlar</button>
+                      <button onClick={() => setSettingsSubTab('categories')} className={`pb-2 px-4 font-bold ${settingsSubTab === 'categories' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}>Kateqoriyalar</button>
+                  </div>
+
+                  {settingsSubTab === 'general' && (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                          <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-4">
+                              <h4 className="font-bold text-lg text-primary mb-2 flex items-center gap-2"><Globe className="w-5 h-5"/> Sayt Məlumatları</h4>
+                              <div>
+                                  <label className="text-xs text-gray-500 block mb-1">Sayt Adı</label>
+                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" value={generalForm.siteName} onChange={e => setGeneralForm({...generalForm, siteName: e.target.value})} />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500 block mb-1">Hero Başlıq</label>
+                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" value={generalForm.heroTitle} onChange={e => setGeneralForm({...generalForm, heroTitle: e.target.value})} />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500 block mb-1">Hero Alt Başlıq</label>
+                                  <textarea className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white h-20" value={generalForm.heroSubtitle} onChange={e => setGeneralForm({...generalForm, heroSubtitle: e.target.value})}></textarea>
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500 block mb-1">Loqo URL</label>
+                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" value={generalForm.logoUrl} onChange={e => setGeneralForm({...generalForm, logoUrl: e.target.value})} />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500 block mb-1">Footer Yazısı</label>
+                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" value={generalForm.footerText} onChange={e => setGeneralForm({...generalForm, footerText: e.target.value})} />
+                              </div>
+                          </div>
+
+                          <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-4">
+                              <h4 className="font-bold text-lg text-primary mb-2 flex items-center gap-2"><MessageSquare className="w-5 h-5"/> Əlaqə & Sosial</h4>
+                              <div>
+                                  <label className="text-xs text-gray-500 block mb-1">WhatsApp Nömrəsi</label>
+                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" value={generalForm.whatsappNumber} onChange={e => setGeneralForm({...generalForm, whatsappNumber: e.target.value})} />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500 block mb-1">Email</label>
+                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" value={generalForm.contactEmail || ''} onChange={e => setGeneralForm({...generalForm, contactEmail: e.target.value})} />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500 block mb-1">Ünvan</label>
+                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" value={generalForm.contactAddress || ''} onChange={e => setGeneralForm({...generalForm, contactAddress: e.target.value})} />
+                              </div>
+                              <div className="border-t border-white/10 pt-4 mt-2">
+                                  <p className="text-xs font-bold text-gray-400 mb-2 uppercase">Sosial Linkler</p>
+                                  <div className="grid grid-cols-2 gap-3">
+                                      <input className="bg-surfaceHighlight border border-white/10 rounded-xl p-2 text-sm text-white" placeholder="Instagram" value={generalForm.socials.instagram} onChange={e => setGeneralForm({...generalForm, socials: {...generalForm.socials, instagram: e.target.value}})} />
+                                      <input className="bg-surfaceHighlight border border-white/10 rounded-xl p-2 text-sm text-white" placeholder="Telegram" value={generalForm.socials.telegram} onChange={e => setGeneralForm({...generalForm, socials: {...generalForm.socials, telegram: e.target.value}})} />
+                                      <input className="bg-surfaceHighlight border border-white/10 rounded-xl p-2 text-sm text-white" placeholder="TikTok" value={generalForm.socials.tiktok} onChange={e => setGeneralForm({...generalForm, socials: {...generalForm.socials, tiktok: e.target.value}})} />
+                                  </div>
+                              </div>
+                              <button onClick={saveGeneralSettings} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 mt-4"><Save className="w-5 h-5"/> Yadda Saxla</button>
+                          </div>
+                      </div>
+                  )}
+
+                  {settingsSubTab === 'categories' && (
+                      <div className="glass-card p-6 rounded-2xl border border-white/10">
+                          <h4 className="font-bold mb-4">Kateqoriyaları İdarə Et</h4>
+                          <div className="flex gap-4 mb-6">
+                              <input className="flex-1 bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Ad" value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} />
+                              <input className="flex-1 bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Şəkil URL" value={catForm.image} onChange={e => setCatForm({...catForm, image: e.target.value})} />
+                              <button onClick={() => { addCategory({id: `c-${Date.now()}`, name: catForm.name, image: catForm.image}); setCatForm({name:'', image:''}); }} className="bg-white text-black px-6 rounded-xl font-bold">Əlavə Et</button>
+                          </div>
+                          <table className="w-full text-left text-sm">
+                              <thead className="bg-white/5 text-gray-400 uppercase text-xs"><tr><th className="p-3">Ad</th><th className="p-3 text-right">Sil</th></tr></thead>
+                              <tbody>
+                                  {categories.map(c => (
+                                      <tr key={c.id} className="border-b border-white/5 hover:bg-white/5">
+                                          <td className="p-3 font-bold text-white flex items-center gap-2">
+                                              {c.image && <img src={c.image} className="w-8 h-8 rounded object-cover"/>}
+                                              {c.name}
+                                          </td>
+                                          <td className="p-3 text-right"><button onClick={() => handleDelete('category', c.id)} className="text-red-500"><Trash2 className="w-4 h-4"/></button></td>
+                                      </tr>
+                                  ))}
+                              </tbody>
+                          </table>
+                      </div>
+                  )}
               </div>
           )}
 
@@ -472,50 +695,18 @@ const Admin = () => {
       {/* DELIVERY MODAL */}
       {deliveryModal && (
           <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm">
-              <div className="bg-gaming-card p-6 border border-gray-700 w-full max-w-lg shadow-2xl animate-fade-in">
-                  <h3 className="text-xl font-bold mb-2">Sifarişi Tamamla</h3>
+              <div className="glass-card p-6 border border-white/10 w-full max-w-lg shadow-2xl animate-fade-in rounded-2xl">
+                  <h3 className="text-xl font-bold mb-2 text-white">Sifarişi Tamamla</h3>
                   <p className="text-gray-400 text-sm mb-4">Məhsul: <span className="text-white font-bold">{deliveryModal.productTitle}</span></p>
                   <textarea 
-                      className="w-full bg-black border border-gray-700 p-3 text-white h-32 font-mono focus:border-white outline-none" 
+                      className="w-full bg-surfaceHighlight border border-white/10 p-4 text-white h-40 font-mono focus:border-primary outline-none rounded-xl text-sm" 
                       value={deliveryContent} 
                       onChange={(e) => setDeliveryContent(e.target.value)}
                       placeholder="Müştəriyə göndəriləcək məlumat (Kod, Login və s.)..."
                   ></textarea>
                   <div className="flex justify-end gap-3 mt-4">
                       <button onClick={() => setDeliveryModal(null)} className="px-4 py-2 text-gray-400 hover:text-white uppercase text-xs font-bold">Bağla</button>
-                      <button onClick={confirmDelivery} className="px-6 py-2 font-bold bg-white text-black hover:bg-gray-200 uppercase text-xs">Təsdiqlə</button>
-                  </div>
-              </div>
-          </div>
-      )}
-
-      {/* ORDER DETAILS MODAL */}
-      {orderDetailsModal && (
-          <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm">
-              <div className="bg-gaming-card p-6 border border-gray-700 w-full max-w-2xl shadow-2xl animate-fade-in max-h-[80vh] overflow-y-auto">
-                  <div className="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
-                      <h3 className="text-xl font-bold">Sifariş #{orderDetailsModal.id.slice(-6)}</h3>
-                      <button onClick={() => setOrderDetailsModal(null)}><X className="text-gray-400 hover:text-white"/></button>
-                  </div>
-                  <div className="space-y-4 text-sm">
-                      <div className="flex justify-between"><span className="text-gray-400">İstifadəçi:</span> <span className="text-white">{orderDetailsModal.userId}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-400">Məbləğ:</span> <span className="text-white font-bold">{orderDetailsModal.totalPrice} ₼</span></div>
-                      <div className="flex justify-between"><span className="text-gray-400">Metod:</span> <span className="text-white">{orderDetailsModal.paymentMethodName}</span></div>
-                      <div className="bg-black p-3 border border-gray-800 mt-2">
-                          <p className="font-bold mb-2">Məhsullar:</p>
-                          {orderDetailsModal.items.map((i, idx) => (
-                              <div key={idx} className="flex justify-between border-b border-gray-800 pb-1 mb-1 last:border-0">
-                                  <span>{i.title} (x{i.quantity})</span>
-                                  <span>{i.userInput || '-'}</span>
-                              </div>
-                          ))}
-                      </div>
-                      {orderDetailsModal.receiptImage && (
-                          <div className="mt-4">
-                              <p className="font-bold mb-2">Qəbz:</p>
-                              <img src={orderDetailsModal.receiptImage} className="w-full border border-gray-700 grayscale" />
-                          </div>
-                      )}
+                      <button onClick={confirmDelivery} className="px-6 py-2 font-bold bg-primary text-white rounded-xl hover:bg-primary-dark uppercase text-xs transition-colors shadow-lg shadow-primary/20">Təsdiqlə</button>
                   </div>
               </div>
           </div>
