@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>S2GEPIN | Oyun və E-pin Satışı</title>
+    <title>DigiStore | Premium Rəqəmsal Həllər</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
@@ -16,29 +16,38 @@
               sans: ['"Plus Jakarta Sans"', 'sans-serif'],
             },
             colors: {
-              background: '#1a1a1a', // Dark Grey background like screenshots
-              surface: '#262626',    // Slightly lighter grey
-              surfaceHighlight: '#333333',
+              background: '#020617', // Deep Slate 950
+              surface: '#0f172a',    // Slate 900
+              surfaceHighlight: '#1e293b', // Slate 800
               primary: {
-                DEFAULT: '#9333ea', // Purple
-                dark: '#7e22ce',
-                light: '#a855f7'
+                DEFAULT: '#6366f1', // Indigo 500
+                dark: '#4338ca',
+                glow: 'rgba(99, 102, 241, 0.5)'
               },
               secondary: {
-                DEFAULT: '#db2777', // Pink/Magenta
-                dark: '#be185d'
+                DEFAULT: '#06b6d4', // Cyan 500
+                glow: 'rgba(6, 182, 212, 0.5)'
               },
-              accent: '#8b5cf6', // Violet
+              accent: '#8b5cf6', // Violet 500
               
-              'gaming-dark': '#1a1a1a',
-              'gaming-card': '#262626',
-              'gaming-neon': '#db2777', // Pink text highlights
+              // Backward compatibility
+              'gaming-dark': '#020617',
+              'gaming-card': '#0f172a',
+              'gaming-neon': '#6366f1',
+              'gaming-accent': '#06b6d4',
             },
             animation: {
+              'blob': 'blob 7s infinite',
               'fade-in': 'fadeIn 0.6s ease-out forwards',
               'slide-up': 'slideUp 0.5s ease-out forwards',
             },
             keyframes: {
+              blob: {
+                '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                '100%': { transform: 'translate(0px, 0px) scale(1)' },
+              },
               fadeIn: {
                 '0%': { opacity: '0' },
                 '100%': { opacity: '1' },
@@ -57,7 +66,7 @@
         margin: 0;
         padding: 0;
         height: 100%;
-        background-color: #1a1a1a;
+        background-color: #020617;
         color: #f8fafc;
         overflow-x: hidden;
       }
@@ -67,30 +76,67 @@
         display: flex;
         flex-direction: column;
       }
+      
+      /* Global Glass Effect */
+      .glass {
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      
+      .glass-card {
+        background: rgba(30, 41, 59, 0.4);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      .glass-card:hover {
+        background: rgba(30, 41, 59, 0.6);
+        border-color: rgba(99, 102, 241, 0.3);
+        box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.2);
+        transform: translateY(-2px);
+      }
 
       /* Custom Scrollbar */
       ::-webkit-scrollbar {
         width: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #1a1a1a; 
+        background: #020617; 
       }
       ::-webkit-scrollbar-thumb {
-        background: #404040; 
+        background: #334155; 
         border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #525252; 
+        background: #475569; 
       }
       
-      .input-dark {
-        background-color: #1a1a1a;
-        border: 1px solid #404040;
-        color: white;
+      /* Aurora Background */
+      .aurora-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -1;
+        overflow: hidden;
+        pointer-events: none;
       }
-      .input-dark:focus {
-        border-color: #9333ea;
-        outline: none;
+      .aurora-blob {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.4;
+        animation: blob 10s infinite cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .animation-delay-2000 {
+        animation-delay: 2s;
+      }
+      .animation-delay-4000 {
+        animation-delay: 4s;
       }
     </style>
   <script type="importmap">
@@ -106,7 +152,16 @@
 </script>
 </head>
   <body>
+    <!-- Background Gradient Blobs -->
+    <div class="aurora-bg">
+        <div class="aurora-blob bg-primary w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
+        <div class="aurora-blob bg-secondary w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2 animation-delay-2000"></div>
+        <div class="aurora-blob bg-accent w-80 h-80 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20 animation-delay-4000"></div>
+    </div>
+    
     <div id="root"></div>
+    
+    <!-- IMPORTANT: Entry point for Vite/Vercel -->
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>
