@@ -1,3 +1,4 @@
+
 import { Product, ProductType, PaymentMethod, User, Category, SiteSettings, PromoCode } from './types';
 
 // Default Admin User
@@ -33,18 +34,18 @@ export const MOCK_PROMO_CODES: PromoCode[] = [
 ];
 
 export const INITIAL_SETTINGS: SiteSettings = {
-  siteName: 'DigiStore',
+  siteName: 'S2GEPIN',
   logoUrl: '', 
-  heroBannerUrl: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=2070&auto=format&fit=crop', // Tech/Office background
-  heroTitle: 'Rəqəmsal İmkanları Kəşf Edin',
-  heroSubtitle: 'AI alətləri, Dizayn proqramları və Lisenziyaların rəsmi satış platforması.',
+  heroBannerUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop', 
+  heroTitle: 'Oyun Dünyasına Xoş Gəldiniz',
+  heroSubtitle: 'Ən sərfəli qiymətə UC, VP və E-pin satışı.',
   whatsappNumber: '+994555555555',
-  contactEmail: 'info@digistore.az',
-  contactAddress: 'Bakı şəhəri, Port Baku Tower',
-  footerText: '© 2024 DigiStore Azerbaijan. Rəsmi lisenziyalı proqram təminatı.',
+  contactEmail: 'info@s2gepin.az',
+  contactAddress: 'Bakı şəhəri, Nizami küçəsi',
+  footerText: '© 2024 S2GEPIN Azerbaijan. Bütün hüquqlar qorunur.',
   discordWebhook: '',
-  seoTitle: 'DigiStore AZ - Lisenziyalar və AI Hesabları',
-  seoDesc: 'Azərbaycanın ən böyük rəqəmsal lisenziya platforması.',
+  seoTitle: 'S2GEPIN - PUBG UC, Valorant VP, Oyun Satışı',
+  seoDesc: 'Azərbaycanın ən böyük oyun və epin platforması.',
   socials: {
     instagram: 'https://instagram.com',
     telegram: 'https://t.me',
@@ -54,90 +55,131 @@ export const INITIAL_SETTINGS: SiteSettings = {
 };
 
 export const INITIAL_CATEGORIES: Category[] = [
-  { id: 'cat_ai', name: 'Süni İntellekt (AI)', icon: 'bot', image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1000&auto=format&fit=crop' },
-  { id: 'cat_design', name: 'Dizayn & Yaradıcılıq', icon: 'palette', image: 'https://images.unsplash.com/photo-1626785774573-4b799314346d?q=80&w=1000&auto=format&fit=crop' },
-  { id: 'cat_office', name: 'Ofis & Təhsil', icon: 'briefcase', image: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=1000&auto=format&fit=crop' },
-  { id: 'cat_stream', name: 'Film & Musiqi', icon: 'play', image: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?q=80&w=1000&auto=format&fit=crop' }
+  { id: 'cat_pubg', name: 'PUBG Mobile', icon: 'crosshair', image: 'https://wallpapers.com/images/hd/pubg-mobile-poster-j688p340057041a7.jpg' },
+  { id: 'cat_valorant', name: 'Valorant', icon: 'shield', image: 'https://images.hdqwalls.com/wallpapers/valorant-4k-gaming-new-2020-ix.jpg' },
+  { id: 'cat_mlbb', name: 'Mobile Legends', icon: 'sword', image: 'https://images6.alphacoders.com/110/1107530.jpg' },
+  { id: 'cat_steam', name: 'Steam Wallet', icon: 'wallet', image: 'https://steamcdn-a.akamaihd.net/steam/clusters/frontpage/88d697841551062080352528/page_bg_english.jpg' },
+  { id: 'cat_lol', name: 'League of Legends', icon: 'gamepad', image: 'https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ahri_0.jpg' },
+  { id: 'cat_freefire', name: 'Free Fire', icon: 'flame', image: 'https://images.hdqwalls.com/wallpapers/garena-free-fire-4k-oa.jpg' },
+  { id: 'cat_wolfteam', name: 'Wolfteam', icon: 'skull', image: 'https://i.ytimg.com/vi/S7QzK1yW4SE/maxresdefault.jpg' },
+  { id: 'cat_apple', name: 'Apple iTunes', icon: 'smartphone', image: 'https://images.unsplash.com/photo-1621768216002-5ac171876625?q=80&w=2074&auto=format&fit=crop' }
 ];
 
 export const INITIAL_PRODUCTS: Product[] = [
+  // PUBG Products
   {
-    id: 'p1',
-    title: 'ChatGPT Plus (4.0) - Fərdi',
-    categoryId: 'cat_ai',
-    type: ProductType.ACCOUNT,
-    price: 35.00,
-    costPrice: 30.00,
+    id: 'pubg_60',
+    title: '60 UC',
+    categoryId: 'cat_pubg',
+    type: ProductType.ID_LOAD,
+    price: 1.70,
+    costPrice: 1.50,
     discountPercent: 0,
-    image: 'https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg',
-    description: 'Şəxsi hesabınıza aktivləşdirmə. DALL-E 3 və GPT-4o daxildir. 1 Aylıq abunə.',
+    image: 'https://static.vecteezy.com/system/resources/previews/024/669/489/original/pubg-mobile-uc-60-currency-png.png',
+    description: 'PUBG Mobile 60 UC. ID ilə yükləmə.',
     requiresInput: true,
-    inputLabel: 'OpenAI Email ünvanı',
-    durationDays: 30
+    inputLabel: 'PUBG ID (Global)',
+    durationDays: 0,
+    stockCount: 999
   },
   {
-    id: 'p2',
-    title: 'Canva Pro - Ömürlük',
-    categoryId: 'cat_design',
-    type: ProductType.ACCOUNT,
-    price: 15.00,
-    costPrice: 5.00,
-    discountPercent: 0, 
-    image: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop',
-    description: 'Şəxsi emailinizə komanda dəvəti ilə qoşulma. Bütün Premium şablonlar aktivdir.',
+    id: 'pubg_325',
+    title: '325 + 25 UC',
+    categoryId: 'cat_pubg',
+    type: ProductType.ID_LOAD,
+    price: 9.20,
+    costPrice: 8.50,
+    discountPercent: 5,
+    image: 'https://static.vecteezy.com/system/resources/previews/024/669/482/original/pubg-mobile-uc-300-currency-png.png',
+    description: 'PUBG Mobile 325 UC + Bonus. ID ilə yükləmə.',
     requiresInput: true,
-    inputLabel: 'Canva Email ünvanı',
-    isLifetime: true // Lifetime product
+    inputLabel: 'PUBG ID (Global)',
+    durationDays: 0,
+    stockCount: 999
   },
   {
-    id: 'p3',
-    title: 'Microsoft Office 365 (5 Cihaz)',
-    categoryId: 'cat_office',
-    type: ProductType.ACCOUNT,
-    price: 12.00,
-    costPrice: 3.00,
+    id: 'pubg_660',
+    title: '660 + 60 UC',
+    categoryId: 'cat_pubg',
+    type: ProductType.ID_LOAD,
+    price: 18.50,
+    costPrice: 16.00,
     discountPercent: 0,
-    image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1000&auto=format&fit=crop',
-    description: 'Word, Excel, PowerPoint. PC, Mac və Mobil dəstəkləyir. 1 TB OneDrive daxildir.',
-    durationDays: 365
+    image: 'https://static.vecteezy.com/system/resources/previews/024/669/485/original/pubg-mobile-uc-600-currency-png.png',
+    description: 'PUBG Mobile 660 UC + Bonus. ID ilə yükləmə.',
+    requiresInput: true,
+    inputLabel: 'PUBG ID (Global)',
+    durationDays: 0,
+    stockCount: 999
   },
   {
-    id: 'p4',
-    title: 'CapCut Pro - 1 İllik',
-    categoryId: 'cat_design',
-    type: ProductType.ACCOUNT,
-    price: 25.00,
-    costPrice: 15.00,
-    discountPercent: 10,
-    image: 'https://images.unsplash.com/photo-1611162616475-46b635cb6868?q=80&w=1000&auto=format&fit=crop',
-    description: 'Video montaj üçün premium alətlər. Reklamsız.',
-    durationDays: 365
+    id: 'pubg_1800',
+    title: '1800 UC',
+    categoryId: 'cat_pubg',
+    type: ProductType.ID_LOAD,
+    price: 45.00,
+    costPrice: 40.00,
+    discountPercent: 0,
+    image: 'https://static.vecteezy.com/system/resources/previews/024/669/493/original/pubg-mobile-uc-1500-currency-png.png',
+    description: 'PUBG Mobile 1800 UC. ID ilə yükləmə.',
+    requiresInput: true,
+    inputLabel: 'PUBG ID (Global)',
+    durationDays: 0,
+    stockCount: 100
   },
+  
+  // Valorant Products
   {
-    id: 'p5',
-    title: 'Windows 11 Pro Lisenziya',
-    categoryId: 'cat_office',
+    id: 'val_115',
+    title: '115 VP (TR)',
+    categoryId: 'cat_valorant',
     type: ProductType.LICENSE_KEY,
-    price: 20.00,
-    costPrice: 8.00,
+    price: 2.50,
+    costPrice: 2.00,
     discountPercent: 0,
-    image: 'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?q=80&w=1000&auto=format&fit=crop',
-    description: 'Rəsmi Retail açar. Formatdan sonra istifadə edilə bilər. Ömürlük aktivasiya.',
-    isLifetime: true
+    image: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt0f822108740c0649/5fd7f798e9b63b276d337f71/Valorant_2020_06_115_VP.png',
+    description: 'Valorant 115 Points - Türkiyə Regionu üçün.',
+    isLifetime: true,
+    stockCount: 50
   },
   {
-    id: 'p6',
-    title: 'Gemini Advanced',
-    categoryId: 'cat_ai',
-    type: ProductType.ACCOUNT,
-    price: 38.00,
-    costPrice: 35.00,
+    id: 'val_485',
+    title: '485 VP (TR)',
+    categoryId: 'cat_valorant',
+    type: ProductType.LICENSE_KEY,
+    price: 10.50,
+    costPrice: 9.00,
     discountPercent: 0,
-    image: 'https://lh3.googleusercontent.com/Xk_s5S7y_b2XqZ7Y7Y5c8f8Z7Y7Y5c8f8Z7Y7Y5c8f8Z7Y7Y5c8f8Z7Y7Y5c8f8=w2400', // Simplified link or generic AI
-    description: 'Google-un ən güclü AI modeli. Google One Premium daxildir.',
-    requiresInput: true,
-    inputLabel: 'Gmail ünvanı',
-    durationDays: 30
+    image: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt7274094a8f307398/5fd7f7981b212f2775a61e0e/Valorant_2020_06_485_VP.png',
+    description: 'Valorant 485 Points - Türkiyə Regionu üçün.',
+    isLifetime: true,
+    stockCount: 25
+  },
+  {
+    id: 'val_925',
+    title: '925 VP (TR)',
+    categoryId: 'cat_valorant',
+    type: ProductType.LICENSE_KEY,
+    price: 19.00,
+    costPrice: 17.00,
+    discountPercent: 0,
+    image: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt904976c6691459a9/5fd7f798e1694027725916a0/Valorant_2020_06_925_VP.png',
+    description: 'Valorant 925 Points - Türkiyə Regionu üçün.',
+    isLifetime: true,
+    stockCount: 20
+  },
+  {
+    id: 'val_1850',
+    title: '1850 VP (TR)',
+    categoryId: 'cat_valorant',
+    type: ProductType.LICENSE_KEY,
+    price: 36.00,
+    costPrice: 32.00,
+    discountPercent: 10,
+    image: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt3f1246c310b994cc/5fd7f7980335272379b3d584/Valorant_2020_06_1850_VP.png',
+    description: 'Valorant 1850 Points - Türkiyə Regionu üçün.',
+    isLifetime: true,
+    stockCount: 15
   }
 ];
 
