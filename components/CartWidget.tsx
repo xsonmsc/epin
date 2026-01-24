@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, X, Trash2, Plus, Minus, ArrowRight } from 'lucide-react';
 import { useApp } from '../store';
@@ -91,10 +92,10 @@ const CartWidget = () => {
          </div>
       </div>
 
-      {/* Floating Button */}
+      {/* Floating Button - Moved to Right to avoid Balance overlap */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 left-6 z-[50] glass text-white p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 flex items-center justify-center group ${bump ? 'scale-110 ring-2 ring-primary' : ''}`}
+        className={`fixed bottom-6 right-24 z-[50] glass text-white p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 flex items-center justify-center group ${bump ? 'scale-110 ring-2 ring-primary' : ''}`}
       >
         <ShoppingCart className="w-6 h-6 text-primary group-hover:text-white transition-colors" />
         {cart.length > 0 && (

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
 import ProductCard from '../components/ProductCard';
-import { ArrowLeft, Search, Filter, SlidersHorizontal, ArrowDownUp } from 'lucide-react';
+import { ArrowLeft, Search, Filter, SlidersHorizontal, ArrowDownUp, Tag } from 'lucide-react';
 
 const CategoryPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -10,13 +11,18 @@ const CategoryPage = () => {
   const { categories, products } = useApp();
   const [search, setSearch] = useState('');
   const [sortOption, setSortOption] = useState<'default' | 'price-asc' | 'price-desc' | 'name-asc'>('default');
+  const [selectedSubCat, setSelectedSubCat] = useState<string>('ALL');
 
   const category = categories.find(c => c.id === id);
   const categoryProducts = products.filter(p => p.categoryId === id);
 
+  // Extract unique sub-categories
+  const subCategories = Array.from(new Set(categoryProducts.map(p => p.subCategory).filter(Boolean))) as string[];
+
   // Filter & Sort Logic
   const filteredProducts = categoryProducts
     .filter(p => p.title.toLowerCase().includes(search.toLowerCase()))
+    .filter(p => selectedSubCat === 'ALL' || p.subCategory === selectedSubCat)
     .sort((a, b) => {
         if (sortOption === 'price-asc') return a.price - b.price;
         if (sortOption === 'price-desc') return b.price - a.price;
@@ -36,7 +42,7 @@ const CategoryPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gaming-dark pb-20 pt-6 px-4">
+    <div className="min-h-screen bg-gaming-dark pb-20 pt-28 px-4">
         <div className="max-w-7xl mx-auto">
             {/* Breadcrumb / Back */}
             <button onClick={() => navigate('/')} className="flex items-center text-gray-400 hover:text-white mb-6 group transition-colors">
@@ -62,8 +68,37 @@ const CategoryPage = () => {
                 </div>
             </div>
 
+            {/* Sub-Category Tabs (If any) */}
+            {subCategories.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide">
+                    <button 
+                        onClick={() => setSelectedSubCat('ALL')}
+                        className={`px-6 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all border ${
+                            selectedSubCat === 'ALL' 
+                            ? 'bg-gaming-neon text-black border-gaming-neon' 
+                            : 'bg-slate-900 text-gray-400 border-gray-700 hover:text-white'
+                        }`}
+                    >
+                        Hamısı
+                    </button>
+                    {subCategories.map(sub => (
+                        <button 
+                            key={sub}
+                            onClick={() => setSelectedSubCat(sub)}
+                            className={`px-6 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all border flex items-center gap-2 ${
+                                selectedSubCat === sub 
+                                ? 'bg-gaming-neon text-black border-gaming-neon' 
+                                : 'bg-slate-900 text-gray-400 border-gray-700 hover:text-white'
+                            }`}
+                        >
+                            <Tag className="w-3 h-3" /> {sub}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {/* Toolbar: Search & Sort */}
-            <div className="bg-gaming-card border border-gray-800 rounded-2xl p-4 mb-8 sticky top-20 z-30 shadow-xl backdrop-blur-md bg-opacity-90">
+            <div className="bg-gaming-card border border-gray-800 rounded-2xl p-4 mb-8 sticky top-24 z-30 shadow-xl backdrop-blur-md bg-opacity-90">
                 <div className="flex flex-col md:flex-row gap-4 justify-between">
                     {/* Search */}
                     <div className="relative flex-1">
@@ -114,7 +149,7 @@ const CategoryPage = () => {
                     </div>
                     <h3 className="text-xl font-bold text-white mb-2">Nəticə Tapılmadı</h3>
                     <p className="text-gray-500">Axtarışınıza uyğun məhsul yoxdur.</p>
-                    <button onClick={() => setSearch('')} className="mt-4 text-gaming-neon font-bold hover:underline">Axtarışı Təmizlə</button>
+                    <button onClick={() => { setSearch(''); setSelectedSubCat('ALL'); }} className="mt-4 text-gaming-neon font-bold hover:underline">Filtrləri Təmizlə</button>
                 </div>
             )}
         </div>

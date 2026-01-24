@@ -65,6 +65,7 @@ export interface Product {
   id: string;
   title: string;
   categoryId: string;
+  subCategory?: string; // New: Alt Kateqoriya (Netflix -> UHD, HD)
   type: ProductType;
   price: number;        
   costPrice: number;    

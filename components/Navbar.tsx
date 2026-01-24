@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Bell, LogOut, ChevronDown, User as UserIcon, Heart, Search } from 'lucide-react';
+import { Menu, X, Bell, LogOut, ChevronDown, User as UserIcon, Heart, Search, LogIn, UserPlus } from 'lucide-react';
 import { useApp } from '../store';
 import { Notification } from '../types';
 
@@ -10,6 +10,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
   const notifRef = useRef<HTMLDivElement>(null);
@@ -31,10 +32,18 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleSearch = (e: React.FormEvent) => {
+      e.preventDefault();
+      if(searchQuery.trim()) {
+          navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+          setIsOpen(false); // Close mobile menu if open
+      }
+  };
+
   const isActive = (path: string) => location.pathname === path;
 
   const navLinks = [
-      { name: 'Mağaza', path: '/' },
+      { name: 'Ana Səhifə', path: '/' },
       { name: 'Kateqoriyalar', path: '/#categories' }, 
       { name: 'Xəbərlər', path: '/news' }, 
       { name: 'Qaydalar', path: '/rules' },
@@ -52,7 +61,6 @@ const Navbar = () => {
 
   const handleLinkClick = (path: string) => {
     if (path.startsWith('/#')) {
-        // Handle hash navigation manually if needed, or rely on browser default for IDs
         const id = path.replace('/#', '');
         if (location.pathname !== '/') {
              navigate('/');
@@ -70,52 +78,60 @@ const Navbar = () => {
   };
 
   return (
-    <nav className={`fixed w-full z-50 transition-all duration-300 border-b ${scrolled ? 'glass border-white/10 h-16' : 'bg-transparent border-transparent h-20'}`}>
+    <nav className={`fixed w-full z-50 transition-all duration-300 border-b ${scrolled ? 'glass border-white/10 h-20' : 'bg-transparent border-transparent h-24'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-        <div className="flex items-center justify-between h-full">
+        <div className="flex items-center justify-between h-full gap-4">
           
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
+          <Link to="/" className="flex items-center gap-2 group shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
               D
             </div>
-            <span className="text-xl font-bold text-white tracking-tight">
+            <span className="text-2xl font-bold text-white tracking-tight hidden sm:block">
               GAME<span className="text-primary font-light">PAY</span>
             </span>
           </Link>
             
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
-            {navLinks.map((link, idx) => (
-                <button 
-                    key={idx} 
-                    onClick={() => handleLinkClick(link.path)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                        isActive(link.path) 
-                        ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)]' 
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                    }`}
-                >
-                    {link.name}
-                </button>
-            ))}
+          {/* Desktop Search & Nav */}
+          <div className="hidden md:flex flex-1 items-center justify-center px-8">
+              <div className="flex items-center space-x-1 mr-6">
+                {navLinks.map((link, idx) => (
+                    <button 
+                        key={idx} 
+                        onClick={() => handleLinkClick(link.path)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                            isActive(link.path) 
+                            ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)]' 
+                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        {link.name}
+                    </button>
+                ))}
+              </div>
+              
+              <form onSubmit={handleSearch} className="relative w-64 group">
+                  <input 
+                    type="text" 
+                    placeholder="Məhsul axtar..." 
+                    className="w-full bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm text-white focus:w-80 focus:bg-black/40 focus:border-primary transition-all duration-300 outline-none placeholder-gray-500"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500 group-focus-within:text-primary transition-colors" />
+              </form>
           </div>
 
           {/* Right Section */}
-          <div className="hidden md:flex items-center gap-4">
-               {/* Search Trigger (Visual Only for now) */}
-               <button className="text-gray-400 hover:text-white transition-colors">
-                   <Search className="w-5 h-5" />
-               </button>
-
+          <div className="hidden md:flex items-center gap-4 shrink-0">
                {isAuthenticated ? (
                  <>
                   {/* Notifications */}
                   <div className="relative" ref={notifRef}>
                       <button onClick={() => setNotifOpen(!notifOpen)} className="relative p-2 text-gray-400 hover:text-white transition-colors">
-                          <Bell className="w-5 h-5" />
+                          <Bell className="w-6 h-6" />
                           {unreadCount > 0 && (
-                              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-background"></span>
+                              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-background animate-pulse"></span>
                           )}
                       </button>
 
@@ -149,19 +165,22 @@ const Navbar = () => {
                   <div className="relative" ref={profileRef}>
                       <button 
                         onClick={() => setProfileOpen(!profileOpen)}
-                        className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full border border-white/10 hover:bg-white/5 transition-all"
+                        className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-full border border-white/10 hover:bg-white/5 transition-all bg-black/20"
                       >
-                        <div className="h-7 w-7 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white text-xs font-bold shadow-lg">
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white text-sm font-bold shadow-lg">
                             {user?.name.charAt(0)}
                         </div>
-                        <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+                        <div className="text-left hidden lg:block">
+                            <p className="text-xs font-bold text-white leading-none mb-0.5">{user?.name}</p>
+                            <p className="text-[10px] text-primary font-mono">{user?.balance.toFixed(2)} ₼</p>
+                        </div>
+                        <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform mr-2 ${profileOpen ? 'rotate-180' : ''}`} />
                       </button>
 
                       {profileOpen && (
                           <div className="absolute right-0 mt-4 w-56 glass border border-white/10 rounded-2xl shadow-2xl p-2 z-50 animate-slide-up origin-top-right">
-                              <div className="px-3 py-2 border-b border-white/5 mb-2">
+                              <div className="px-3 py-2 border-b border-white/5 mb-2 lg:hidden">
                                   <p className="text-sm font-bold text-white truncate">{user?.name}</p>
-                                  <p className="text-xs text-gray-400 truncate">{user?.email}</p>
                                   <p className="text-xs text-primary mt-1 font-mono">{user?.balance.toFixed(2)} ₼</p>
                               </div>
                               
@@ -189,20 +208,25 @@ const Navbar = () => {
                   </div>
                  </>
                ) : (
-                 <Link to="/auth" className="bg-white text-background px-5 py-2 rounded-full text-sm font-bold hover:bg-gray-200 transition-colors shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-                    Giriş
-                 </Link>
+                 <div className="flex items-center gap-2">
+                     <Link to="/auth" className="text-white text-sm font-bold hover:text-primary transition-colors px-3 py-2">
+                        Daxil Ol
+                     </Link>
+                     <Link to="/auth" className="bg-white text-background px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-200 transition-colors shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                        Qeydiyyat
+                     </Link>
+                 </div>
                )}
           </div>
 
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center gap-4">
              {isAuthenticated && (
-                <Link to="/profile" className="h-8 w-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white text-xs font-bold">
-                    {user?.name.charAt(0)}
-                </Link>
+                <div className="text-right">
+                    <p className="text-xs font-bold text-white">{user?.balance.toFixed(2)} ₼</p>
+                </div>
              )}
-             <button onClick={() => setIsOpen(!isOpen)} className="text-white p-2">
+             <button onClick={() => setIsOpen(!isOpen)} className="text-white p-2 bg-white/5 rounded-lg border border-white/10">
                 {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
              </button>
           </div>
@@ -211,28 +235,62 @@ const Navbar = () => {
 
       {/* Mobile Menu Overlay */}
       {isOpen && (
-        <div className="md:hidden glass border-t border-white/10 absolute top-full w-full animate-slide-up">
-          <div className="px-4 pt-2 pb-6 space-y-2">
-            {navLinks.map((link, idx) => (
-                <button 
-                    key={idx} 
-                    onClick={() => { handleLinkClick(link.path); setIsOpen(false); }}
-                    className={`block w-full text-left px-4 py-3 rounded-xl text-base font-medium ${
-                        isActive(link.path) ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'
-                    }`}
-                >
-                    {link.name}
-                </button>
-            ))}
-            {!isAuthenticated && (
-                 <Link to="/auth" onClick={() => setIsOpen(false)} className="block px-4 py-3 rounded-xl text-base font-bold text-white bg-primary/20">
-                     Giriş
-                 </Link>
-            )}
-             {isAuthenticated && (
-                <button onClick={() => { handleLogout(); setIsOpen(false); }} className="w-full text-left px-4 py-3 rounded-xl text-base font-medium text-red-400">
-                    Çıxış Et
-                </button>
+        <div className="md:hidden glass border-t border-white/10 absolute top-full w-full animate-slide-up h-[calc(100vh-80px)] overflow-y-auto">
+          <div className="p-4 space-y-4">
+            
+            {/* Mobile Search */}
+            <form onSubmit={handleSearch} className="relative">
+                <input 
+                    type="text" 
+                    placeholder="Axtar..." 
+                    className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:border-primary outline-none"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <Search className="absolute left-3 top-3.5 w-4 h-4 text-gray-500" />
+            </form>
+
+            <div className="space-y-1">
+                {navLinks.map((link, idx) => (
+                    <button 
+                        key={idx} 
+                        onClick={() => { handleLinkClick(link.path); setIsOpen(false); }}
+                        className={`block w-full text-left px-4 py-4 rounded-xl text-base font-medium border border-transparent ${
+                            isActive(link.path) ? 'bg-white/10 text-white border-white/5' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        {link.name}
+                    </button>
+                ))}
+            </div>
+
+            <div className="h-px bg-white/10 my-2"></div>
+
+            {!isAuthenticated ? (
+                 <div className="grid grid-cols-2 gap-4">
+                     <Link to="/auth" onClick={() => setIsOpen(false)} className="flex items-center justify-center gap-2 px-4 py-4 rounded-xl text-base font-bold text-white bg-white/5 border border-white/10">
+                         <LogIn className="w-4 h-4"/> Giriş
+                     </Link>
+                     <Link to="/auth" onClick={() => setIsOpen(false)} className="flex items-center justify-center gap-2 px-4 py-4 rounded-xl text-base font-bold text-black bg-primary">
+                         <UserPlus className="w-4 h-4"/> Qeydiyyat
+                     </Link>
+                 </div>
+            ) : (
+                <div className="space-y-2">
+                    <Link to="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-4 py-4 rounded-xl bg-white/5 border border-white/10 text-white">
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white text-xs font-bold">
+                            {user?.name.charAt(0)}
+                        </div>
+                        <div className="flex-1">
+                            <p className="font-bold text-sm">{user?.name}</p>
+                            <p className="text-xs text-gray-400">{user?.email}</p>
+                        </div>
+                        <p className="font-mono text-primary font-bold">{user?.balance.toFixed(2)} ₼</p>
+                    </Link>
+                    <button onClick={() => { handleLogout(); setIsOpen(false); }} className="w-full text-left px-4 py-4 rounded-xl text-base font-medium text-red-400 bg-red-500/5 border border-red-500/10">
+                        Çıxış Et
+                    </button>
+                </div>
             )}
           </div>
         </div>

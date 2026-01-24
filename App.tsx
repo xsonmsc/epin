@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
@@ -13,6 +14,7 @@ import Rules from './pages/Rules';
 import Balance from './pages/Balance';
 import Contact from './pages/Contact'; 
 import CategoryPage from './pages/CategoryPage';
+import SearchPage from './pages/SearchPage';
 import FloatingBalance from './components/FloatingBalance';
 import { AppProvider, useApp } from './store';
 import { MessageCircle, Instagram, Send, Smartphone } from 'lucide-react';
@@ -84,6 +86,7 @@ const App = () => {
             <Route path="/balance" element={<Balance />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/category/:id" element={<CategoryPage />} />
+            <Route path="/search" element={<SearchPage />} />
             <Route path="/product/:id" element={<ProductView />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<Admin />} />
