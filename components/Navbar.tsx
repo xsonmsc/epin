@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Bell, LogOut, ChevronDown, User as UserIcon, Heart, Search } from 'lucide-react';
@@ -34,7 +35,9 @@ const Navbar = () => {
 
   const navLinks = [
       { name: 'Mağaza', path: '/' },
+      { name: 'Kateqoriyalar', path: '/#categories' }, 
       { name: 'Xəbərlər', path: '/news' }, 
+      { name: 'Qaydalar', path: '/rules' },
       { name: 'Əlaqə', path: '/contact' },
   ];
 
@@ -45,6 +48,25 @@ const Navbar = () => {
       logout();
       navigate('/');
       setProfileOpen(false);
+  };
+
+  const handleLinkClick = (path: string) => {
+    if (path.startsWith('/#')) {
+        // Handle hash navigation manually if needed, or rely on browser default for IDs
+        const id = path.replace('/#', '');
+        if (location.pathname !== '/') {
+             navigate('/');
+             setTimeout(() => {
+                 const el = document.getElementById(id);
+                 if(el) el.scrollIntoView({behavior: 'smooth'});
+             }, 100);
+        } else {
+            const el = document.getElementById(id);
+            if(el) el.scrollIntoView({behavior: 'smooth'});
+        }
+    } else {
+        navigate(path);
+    }
   };
 
   return (
@@ -58,16 +80,16 @@ const Navbar = () => {
               D
             </div>
             <span className="text-xl font-bold text-white tracking-tight">
-              DIGI<span className="text-primary font-light">STORE</span>
+              GAME<span className="text-primary font-light">PAY</span>
             </span>
           </Link>
             
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
             {navLinks.map((link, idx) => (
-                <Link 
+                <button 
                     key={idx} 
-                    to={link.path} 
+                    onClick={() => handleLinkClick(link.path)}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                         isActive(link.path) 
                         ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)]' 
@@ -75,7 +97,7 @@ const Navbar = () => {
                     }`}
                 >
                     {link.name}
-                </Link>
+                </button>
             ))}
           </div>
 
@@ -192,16 +214,15 @@ const Navbar = () => {
         <div className="md:hidden glass border-t border-white/10 absolute top-full w-full animate-slide-up">
           <div className="px-4 pt-2 pb-6 space-y-2">
             {navLinks.map((link, idx) => (
-                <Link 
+                <button 
                     key={idx} 
-                    to={link.path} 
-                    onClick={() => setIsOpen(false)} 
-                    className={`block px-4 py-3 rounded-xl text-base font-medium ${
+                    onClick={() => { handleLinkClick(link.path); setIsOpen(false); }}
+                    className={`block w-full text-left px-4 py-3 rounded-xl text-base font-medium ${
                         isActive(link.path) ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'
                     }`}
                 >
                     {link.name}
-                </Link>
+                </button>
             ))}
             {!isAuthenticated && (
                  <Link to="/auth" onClick={() => setIsOpen(false)} className="block px-4 py-3 rounded-xl text-base font-bold text-white bg-primary/20">

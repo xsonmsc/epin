@@ -1,108 +1,134 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../store';
 import ProductCard from '../components/ProductCard';
-import { Search, ChevronRight, Zap, ArrowRight, Gamepad2, Gift } from 'lucide-react';
+import { Search, ChevronRight, Zap, ArrowRight, Gamepad2, Gift, MessageSquare, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
-  const { products, categories, blogs } = useApp();
+  const { products, categories, blogs, heroSlides, comments } = useApp();
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
-
-  // Mock Slider Data
-  const slides = [
-    {
-      id: 1,
-      image: "https://wallpapers.com/images/hd/pubg-mobile-poster-j688p340057041a7.jpg",
-      title: "PUBG MOBILE",
-      subtitle: "UC FİRTINASI BAŞLADI",
-      desc: "Ən sərfəli qiymətə UC yüklə, mövsümün kralı ol!",
-      btnText: "İndi Al",
-      link: "/category/cat_pubg"
-    },
-    {
-      id: 2,
-      image: "https://images.hdqwalls.com/wallpapers/valorant-4k-gaming-new-2020-ix.jpg",
-      title: "VALORANT",
-      subtitle: "YENİ AJAN GƏLDİ",
-      desc: "VP alaraq yeni skinlər və battle pass əldə et.",
-      btnText: "VP Satın Al",
-      link: "/category/cat_valorant"
-    }
-  ];
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [slides.length]);
+    if (heroSlides.length > 0) {
+      const timer = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+      }, 5000);
+      return () => clearInterval(timer);
+    }
+  }, [heroSlides.length]);
 
-  // Specific Filtered Products
-  const pubgProducts = products.filter(p => p.categoryId === 'cat_pubg').slice(0, 4);
-  const valorantProducts = products.filter(p => p.categoryId === 'cat_valorant').slice(0, 4);
+  // Scroll logic for Categories
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+        const { current } = scrollRef;
+        const scrollAmount = 300;
+        if (direction === 'left') {
+            current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        } else {
+            current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+    }
+  };
+
+  // Filter Data based on "Popular" flags
+  const popularProducts = products.filter(p => p.isPopular).slice(0, 8); // Limit to 8
+  const popularCategories = categories.filter(c => c.isPopular).slice(0, 4); 
 
   return (
     <div className="min-h-screen pb-20 pt-20">
       
-      {/* 1. BRAND STRIP (Categories) */}
-      <div className="max-w-7xl mx-auto px-4 mb-6">
-         <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+      {/* 1. BRAND STRIP (Categories) - Horizontal Scroll with Arrows */}
+      <div id="categories" className="max-w-7xl mx-auto px-4 mb-8 relative group">
+         
+         {/* Left Arrow */}
+         <button 
+            onClick={() => scroll('left')}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-primary text-white p-2 rounded-full backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 disabled:opacity-0 hidden md:block"
+         >
+             <ChevronLeft className="w-6 h-6" />
+         </button>
+
+         {/* Scroll Container */}
+         <div 
+            ref={scrollRef}
+            className="flex gap-6 overflow-x-auto scrollbar-hide py-4 px-2 scroll-smooth"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+         >
              {categories.map((cat) => (
                  <div 
                     key={cat.id} 
                     onClick={() => navigate(`/category/${cat.id}`)}
-                    className="flex flex-col items-center gap-2 cursor-pointer group min-w-[80px]"
+                    className="flex flex-col items-center gap-3 cursor-pointer group/item min-w-[90px]"
                  >
-                     <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-gray-700 to-gray-900 group-hover:from-primary group-hover:to-secondary transition-all">
-                        <div className="w-full h-full rounded-full overflow-hidden border-2 border-background">
-                            <img src={cat.image} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                     <div className="w-20 h-20 rounded-full p-[2px] bg-gradient-to-tr from-gray-700 to-gray-900 group-hover/item:from-primary group-hover/item:to-secondary transition-all shadow-lg">
+                        <div className="w-full h-full rounded-full overflow-hidden border-2 border-background relative">
+                            {cat.image ? (
+                                <img src={cat.image} alt={cat.name} className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-500" />
+                            ) : (
+                                <div className="w-full h-full bg-slate-800 flex items-center justify-center text-xs text-gray-500">No Img</div>
+                            )}
                         </div>
                      </div>
-                     <span className="text-xs text-gray-400 group-hover:text-white font-medium text-center truncate w-full">{cat.name}</span>
+                     <span className="text-xs text-gray-400 group-hover/item:text-white font-medium text-center truncate w-full transition-colors">{cat.name}</span>
                  </div>
              ))}
          </div>
+
+         {/* Right Arrow */}
+         <button 
+            onClick={() => scroll('right')}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-primary text-white p-2 rounded-full backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 hidden md:block"
+         >
+             <ChevronRight className="w-6 h-6" />
+         </button>
       </div>
 
-      {/* 2. HERO SECTION (Slider + Side Banners) */}
+      {/* 2. HERO SECTION (Dynamic Slider + Side Banners) */}
       <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
          {/* Main Slider */}
          <div className="lg:col-span-2 relative h-[250px] sm:h-[350px] md:h-[400px] rounded-2xl overflow-hidden shadow-2xl group border border-white/10">
-             {slides.map((slide, index) => (
-                 <div 
-                    key={slide.id}
-                    className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
-                 >
-                     <img src={slide.image} alt="" className="w-full h-full object-cover" />
-                     <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent flex flex-col justify-center px-8 md:px-12">
-                         <span className="text-primary font-bold tracking-widest text-sm md:text-base mb-2 animate-fade-in">{slide.title}</span>
-                         <h2 className="text-3xl md:text-5xl font-black text-white italic uppercase mb-2 md:mb-4 leading-none max-w-lg animate-slide-up">{slide.subtitle}</h2>
-                         <p className="text-gray-300 text-sm md:text-lg mb-6 max-w-md hidden sm:block animate-slide-up animation-delay-500">{slide.desc}</p>
-                         <button 
-                            onClick={() => navigate(slide.link)}
-                            className="w-fit bg-primary hover:bg-primary-dark text-white font-bold py-2 md:py-3 px-6 md:px-8 rounded-lg transform skew-x-[-10deg] transition-all hover:scale-105 animate-slide-up animation-delay-700"
-                         >
-                             <span className="skew-x-[10deg] inline-block">{slide.btnText}</span>
-                         </button>
-                     </div>
-                 </div>
-             ))}
-             
-             {/* Slider Indicators */}
-             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-                 {slides.map((_, idx) => (
-                     <button 
-                        key={idx} 
-                        onClick={() => setCurrentSlide(idx)}
-                        className={`h-1.5 rounded-full transition-all ${currentSlide === idx ? 'w-8 bg-primary' : 'w-2 bg-white/50 hover:bg-white'}`}
-                     />
-                 ))}
-             </div>
+             {heroSlides.length > 0 ? (
+                 <>
+                    {heroSlides.map((slide, index) => (
+                        <div 
+                            key={slide.id}
+                            className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+                        >
+                            <img src={slide.image} alt="" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent flex flex-col justify-center px-8 md:px-12">
+                                <span className="text-primary font-bold tracking-widest text-sm md:text-base mb-2 animate-fade-in">{slide.title}</span>
+                                <h2 className="text-3xl md:text-5xl font-black text-white italic uppercase mb-2 md:mb-4 leading-none max-w-lg animate-slide-up">{slide.subtitle}</h2>
+                                <p className="text-gray-300 text-sm md:text-lg mb-6 max-w-md hidden sm:block animate-slide-up animation-delay-500">{slide.desc}</p>
+                                <button 
+                                    onClick={() => navigate(slide.link)}
+                                    className="w-fit bg-primary hover:bg-primary-dark text-white font-bold py-2 md:py-3 px-6 md:px-8 rounded-lg transform skew-x-[-10deg] transition-all hover:scale-105 animate-slide-up animation-delay-700"
+                                >
+                                    <span className="skew-x-[10deg] inline-block">{slide.btnText}</span>
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                    
+                    {/* Slider Indicators */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                        {heroSlides.map((_, idx) => (
+                            <button 
+                                key={idx} 
+                                onClick={() => setCurrentSlide(idx)}
+                                className={`h-1.5 rounded-full transition-all ${currentSlide === idx ? 'w-8 bg-primary' : 'w-2 bg-white/50 hover:bg-white'}`}
+                            />
+                        ))}
+                    </div>
+                 </>
+             ) : (
+                 <div className="flex items-center justify-center h-full bg-slate-900 text-gray-500">Banner Yoxdur</div>
+             )}
          </div>
 
-         {/* Side Banners (Static) */}
+         {/* Side Banners (Static for now, can be made dynamic similarly) */}
          <div className="hidden lg:flex flex-col gap-6 h-[400px]">
              <div className="flex-1 relative rounded-2xl overflow-hidden border border-white/10 group cursor-pointer" onClick={() => navigate('/category/cat_valorant')}>
                  <img src="https://images.hdqwalls.com/wallpapers/valorant-jett-4k-game-2s.jpg" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="VP" />
@@ -121,29 +147,23 @@ const Home = () => {
          </div>
       </div>
 
-      {/* 3. PUBG SECTION (Specific Grid) */}
+      {/* 3. POPULAR PRODUCTS SECTION */}
       <div className="max-w-7xl mx-auto px-4 mb-16">
           <div className="flex items-center justify-between mb-6 bg-white/5 p-4 rounded-xl border border-white/10">
               <div className="flex items-center gap-3">
                   <div className="w-1 bg-yellow-400 h-6 rounded-full"></div>
-                  <h2 className="text-xl font-bold text-white uppercase italic tracking-wider">PUBG ID Yükləmə</h2>
+                  <h2 className="text-xl font-bold text-white uppercase italic tracking-wider">Populyar Məhsullar</h2>
               </div>
-              <button 
-                onClick={() => navigate('/category/cat_pubg')}
-                className="bg-yellow-400 text-black px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-yellow-300 transition-colors"
-              >
-                  TÜMÜ
-              </button>
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {pubgProducts.map(product => (
+              {popularProducts.map(product => (
                   <ProductCard key={product.id} product={product} />
               ))}
           </div>
       </div>
 
-      {/* 4. POPULAR CATEGORIES (Vertical Cards) */}
+      {/* 4. GAME WORLD (Popular Categories) */}
       <div className="max-w-7xl mx-auto px-4 mb-16">
           <div className="flex items-center gap-3 mb-6">
               <Gamepad2 className="w-6 h-6 text-primary" />
@@ -151,21 +171,20 @@ const Home = () => {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                  categories.find(c => c.id === 'cat_pubg'),
-                  categories.find(c => c.id === 'cat_valorant'),
-                  categories.find(c => c.id === 'cat_mlbb'),
-                  categories.find(c => c.id === 'cat_wolfteam')
-              ].filter(Boolean).map((cat) => (
+              {popularCategories.map((cat) => (
                   <div 
-                    key={cat!.id}
-                    onClick={() => navigate(`/category/${cat!.id}`)}
+                    key={cat.id}
+                    onClick={() => navigate(`/category/${cat.id}`)}
                     className="relative h-64 md:h-80 rounded-2xl overflow-hidden cursor-pointer group border border-white/10"
                   >
-                      <img src={cat!.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={cat!.name} />
+                      {cat.image ? (
+                        <img src={cat.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={cat.name} />
+                      ) : (
+                        <div className="w-full h-full bg-slate-800 flex items-center justify-center">No Image</div>
+                      )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
                       <div className="absolute bottom-0 left-0 p-6 w-full text-center">
-                          <h3 className="text-white font-black text-xl md:text-2xl uppercase italic drop-shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform">{cat!.name}</h3>
+                          <h3 className="text-white font-black text-xl md:text-2xl uppercase italic drop-shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform">{cat.name}</h3>
                           <div className="h-1 w-12 bg-primary mx-auto mt-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                       </div>
                   </div>
@@ -173,7 +192,43 @@ const Home = () => {
           </div>
       </div>
 
-      {/* 5. NEWS / BLOG SECTION */}
+      {/* 5. TESTIMONIALS (Marquee) */}
+      <div className="mb-16 overflow-hidden bg-white/5 border-y border-white/10 py-6">
+          <div className="max-w-7xl mx-auto px-4 mb-4 flex items-center gap-2 text-primary font-bold uppercase tracking-widest text-xs">
+              <MessageSquare className="w-4 h-4" /> Müştəri Rəyləri
+          </div>
+          {/* Marquee Animation */}
+          <style>{`
+            @keyframes marquee {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+            .animate-marquee {
+              display: flex;
+              width: max-content;
+              animation: marquee 30s linear infinite;
+            }
+            .animate-marquee:hover {
+              animation-play-state: paused;
+            }
+          `}</style>
+          <div className="animate-marquee gap-6 px-4">
+              {[...comments, ...comments, ...comments].filter(c => c.isApproved && c.type === 'site').map((comment, idx) => (
+                  <div key={idx} className="w-80 bg-slate-900 border border-white/10 rounded-xl p-4 flex-shrink-0">
+                      <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center text-white font-bold text-xs">
+                              {comment.author.charAt(0)}
+                          </div>
+                          <span className="font-bold text-white text-sm">{comment.author}</span>
+                          <span className="text-yellow-500 text-xs">★★★★★</span>
+                      </div>
+                      <p className="text-gray-400 text-xs italic">"{comment.content}"</p>
+                  </div>
+              ))}
+          </div>
+      </div>
+
+      {/* 6. NEWS / BLOG SECTION */}
       <div className="max-w-7xl mx-auto px-4 mb-12">
           <div className="flex items-center justify-between mb-6 bg-white/5 p-4 rounded-xl border border-white/10">
               <div className="flex items-center gap-3">

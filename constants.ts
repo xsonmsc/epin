@@ -1,5 +1,5 @@
 
-import { Product, ProductType, PaymentMethod, User, Category, SiteSettings, PromoCode } from './types';
+import { Product, ProductType, PaymentMethod, User, Category, SiteSettings, PromoCode, HeroSlide } from './types';
 
 // Default Admin User
 export const MOCK_USERS: User[] = [
@@ -18,7 +18,7 @@ export const MOCK_USERS: User[] = [
   {
     id: 'admin1',
     name: 'Admin',
-    email: 'admin@digistore.az',
+    email: 'admin@gamepay.az',
     phone: '0555555555',
     role: 'admin',
     balance: 0.00,
@@ -33,18 +33,39 @@ export const MOCK_PROMO_CODES: PromoCode[] = [
   { id: 'promo2', code: 'START', discountPercent: 15, isActive: true }
 ];
 
+export const INITIAL_HERO_SLIDES: HeroSlide[] = [
+  {
+    id: 'slide1',
+    image: "https://wallpapers.com/images/hd/pubg-mobile-poster-j688p340057041a7.jpg",
+    title: "PUBG MOBILE",
+    subtitle: "UC FİRTINASI BAŞLADI",
+    desc: "Ən sərfəli qiymətə UC yüklə, mövsümün kralı ol!",
+    btnText: "İndi Al",
+    link: "/category/cat_pubg"
+  },
+  {
+    id: 'slide2',
+    image: "https://images.hdqwalls.com/wallpapers/valorant-4k-gaming-new-2020-ix.jpg",
+    title: "VALORANT",
+    subtitle: "YENİ AJAN GƏLDİ",
+    desc: "VP alaraq yeni skinlər və battle pass əldə et.",
+    btnText: "VP Satın Al",
+    link: "/category/cat_valorant"
+  }
+];
+
 export const INITIAL_SETTINGS: SiteSettings = {
-  siteName: 'S2GEPIN',
+  siteName: 'GamePay',
   logoUrl: '', 
-  heroBannerUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop', 
+  heroBannerUrl: '', 
   heroTitle: 'Oyun Dünyasına Xoş Gəldiniz',
   heroSubtitle: 'Ən sərfəli qiymətə UC, VP və E-pin satışı.',
   whatsappNumber: '+994555555555',
-  contactEmail: 'info@s2gepin.az',
+  contactEmail: 'info@gamepay.az',
   contactAddress: 'Bakı şəhəri, Nizami küçəsi',
-  footerText: '© 2024 S2GEPIN Azerbaijan. Bütün hüquqlar qorunur.',
+  footerText: '© 2024 GamePay Azerbaijan. Bütün hüquqlar qorunur.',
   discordWebhook: '',
-  seoTitle: 'S2GEPIN - PUBG UC, Valorant VP, Oyun Satışı',
+  seoTitle: 'GamePay - PUBG UC, Valorant VP, Oyun Satışı',
   seoDesc: 'Azərbaycanın ən böyük oyun və epin platforması.',
   socials: {
     instagram: 'https://instagram.com',
@@ -55,13 +76,13 @@ export const INITIAL_SETTINGS: SiteSettings = {
 };
 
 export const INITIAL_CATEGORIES: Category[] = [
-  { id: 'cat_pubg', name: 'PUBG Mobile', icon: 'crosshair', image: 'https://wallpapers.com/images/hd/pubg-mobile-poster-j688p340057041a7.jpg' },
-  { id: 'cat_valorant', name: 'Valorant', icon: 'shield', image: 'https://images.hdqwalls.com/wallpapers/valorant-4k-gaming-new-2020-ix.jpg' },
-  { id: 'cat_mlbb', name: 'Mobile Legends', icon: 'sword', image: 'https://images6.alphacoders.com/110/1107530.jpg' },
+  { id: 'cat_pubg', name: 'PUBG Mobile', icon: 'crosshair', image: 'https://wallpapers.com/images/hd/pubg-mobile-poster-j688p340057041a7.jpg', isPopular: true },
+  { id: 'cat_valorant', name: 'Valorant', icon: 'shield', image: 'https://images.hdqwalls.com/wallpapers/valorant-4k-gaming-new-2020-ix.jpg', isPopular: true },
+  { id: 'cat_mlbb', name: 'Mobile Legends', icon: 'sword', image: 'https://images6.alphacoders.com/110/1107530.jpg', isPopular: true },
   { id: 'cat_steam', name: 'Steam Wallet', icon: 'wallet', image: 'https://steamcdn-a.akamaihd.net/steam/clusters/frontpage/88d697841551062080352528/page_bg_english.jpg' },
   { id: 'cat_lol', name: 'League of Legends', icon: 'gamepad', image: 'https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ahri_0.jpg' },
   { id: 'cat_freefire', name: 'Free Fire', icon: 'flame', image: 'https://images.hdqwalls.com/wallpapers/garena-free-fire-4k-oa.jpg' },
-  { id: 'cat_wolfteam', name: 'Wolfteam', icon: 'skull', image: 'https://i.ytimg.com/vi/S7QzK1yW4SE/maxresdefault.jpg' },
+  { id: 'cat_wolfteam', name: 'Wolfteam', icon: 'skull', image: 'https://i.ytimg.com/vi/S7QzK1yW4SE/maxresdefault.jpg', isPopular: true },
   { id: 'cat_apple', name: 'Apple iTunes', icon: 'smartphone', image: 'https://images.unsplash.com/photo-1621768216002-5ac171876625?q=80&w=2074&auto=format&fit=crop' }
 ];
 
@@ -80,7 +101,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     requiresInput: true,
     inputLabel: 'PUBG ID (Global)',
     durationDays: 0,
-    stockCount: 999
+    stockCount: 999,
+    isPopular: true
   },
   {
     id: 'pubg_325',
@@ -95,7 +117,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     requiresInput: true,
     inputLabel: 'PUBG ID (Global)',
     durationDays: 0,
-    stockCount: 999
+    stockCount: 999,
+    isPopular: true
   },
   {
     id: 'pubg_660',
@@ -110,7 +133,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     requiresInput: true,
     inputLabel: 'PUBG ID (Global)',
     durationDays: 0,
-    stockCount: 999
+    stockCount: 999,
+    isPopular: true
   },
   {
     id: 'pubg_1800',
@@ -140,7 +164,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt0f822108740c0649/5fd7f798e9b63b276d337f71/Valorant_2020_06_115_VP.png',
     description: 'Valorant 115 Points - Türkiyə Regionu üçün.',
     isLifetime: true,
-    stockCount: 50
+    stockCount: 50,
+    isPopular: true
   },
   {
     id: 'val_485',

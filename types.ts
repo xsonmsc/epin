@@ -1,3 +1,4 @@
+
 export enum ProductType {
   ID_LOAD = 'ID_LOAD',       
   LICENSE_KEY = 'LICENSE_KEY', 
@@ -11,6 +12,16 @@ export enum OrderStatus {
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
   FAILED = 'FAILED'
+}
+
+export interface HeroSlide {
+  id: string;
+  image: string;
+  title: string;
+  subtitle: string;
+  desc: string;
+  btnText: string;
+  link: string;
 }
 
 export interface StockCode {
@@ -45,6 +56,7 @@ export interface Category {
   name: string;
   image?: string;
   icon?: string;
+  isPopular?: boolean; // New field for Game World section
   seoTitle?: string;
   seoKeywords?: string;
 }
@@ -64,8 +76,9 @@ export interface Product {
   seoTitle?: string;
   seoKeywords?: string;
   durationDays?: number;
-  isLifetime?: boolean; // New Field for Lifetime products
+  isLifetime?: boolean; 
   stockCount?: number;
+  isPopular?: boolean; // New field for Popular Products section
 }
 
 export interface CartItem {
@@ -170,7 +183,7 @@ export interface SocialLinks {
 export interface SiteSettings {
   siteName: string;
   logoUrl: string;
-  heroBannerUrl: string;
+  heroBannerUrl: string; // Deprecated in favor of HeroSlide, keeping for compatibility
   heroTitle: string;
   heroSubtitle: string;
   whatsappNumber: string;

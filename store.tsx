@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { Product, Order, PaymentMethod, User, OrderStatus, ProductType, Category, SiteSettings, Blog, Agreement, Comment, CartItem, PromoCode, Notification, StockCode, ActivityLog } from './types';
-import { INITIAL_PRODUCTS, INITIAL_PAYMENT_METHODS, MOCK_USERS, INITIAL_CATEGORIES, INITIAL_SETTINGS, MOCK_PROMO_CODES } from './constants';
+import { Product, Order, PaymentMethod, User, OrderStatus, ProductType, Category, SiteSettings, Blog, Agreement, Comment, CartItem, PromoCode, Notification, StockCode, ActivityLog, HeroSlide } from './types';
+import { INITIAL_PRODUCTS, INITIAL_PAYMENT_METHODS, MOCK_USERS, INITIAL_CATEGORIES, INITIAL_SETTINGS, MOCK_PROMO_CODES, INITIAL_HERO_SLIDES } from './constants';
 
 interface AppContextType {
   user: User | null; 
@@ -20,6 +20,7 @@ interface AppContextType {
   notifications: Notification[];
   stocks: StockCode[]; 
   activityLogs: ActivityLog[]; 
+  heroSlides: HeroSlide[];
   
   // Auth
   login: (email: string, pass: string) => boolean;
@@ -55,8 +56,12 @@ interface AppContextType {
   addProduct: (product: Product) => void;
   addProducts: (newProducts: Product[]) => void;
   deleteProduct: (productId: string) => void;
+  togglePopularProduct: (productId: string) => void;
+  
   addCategory: (category: Category) => void;
   deleteCategory: (categoryId: string) => void;
+  togglePopularCategory: (categoryId: string) => void;
+
   updateSiteSettings: (settings: Partial<SiteSettings>) => void;
   updateUserBalance: (amount: number) => void;
   addPaymentMethod: (method: PaymentMethod) => void;
@@ -66,6 +71,10 @@ interface AppContextType {
   deletePromoCode: (id: string) => void;
   togglePromoCode: (id: string) => void;
   
+  // Hero Slides
+  addHeroSlide: (slide: HeroSlide) => void;
+  deleteHeroSlide: (id: string) => void;
+
   // Stock Logic
   addStock: (productId: string, codes: string[]) => void;
   deleteStock: (stockId: string) => void;
@@ -118,9 +127,10 @@ export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
   const [cart, setCart] = usePersistedState<CartItem[]>('ds_cart', []);
   const [stocks, setStocks] = usePersistedState<StockCode[]>('ds_stocks', []);
   
-  // Non-critical data (or static)
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  // Data State
+  const [products, setProducts] = usePersistedState<Product[]>('ds_products', INITIAL_PRODUCTS);
+  const [categories, setCategories] = usePersistedState<Category[]>('ds_categories', INITIAL_CATEGORIES);
+  const [heroSlides, setHeroSlides] = usePersistedState<HeroSlide[]>('ds_hero_slides', INITIAL_HERO_SLIDES);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(INITIAL_PAYMENT_METHODS);
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>(MOCK_PROMO_CODES);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(INITIAL_SETTINGS);
@@ -137,6 +147,8 @@ export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
   ]);
   const [comments, setComments] = useState<Comment[]>([
     { id: 'c1', author: 'Sənan Q.', content: 'Canva Pro ömürlük aldım, dərhal aktivləşdi. Əla!', type: 'product', targetId: 'p2', isApproved: true, date: new Date().toISOString(), rating: 5 },
+    { id: 'c2', author: 'Elvin M.', content: 'PUBG UC anında gəldi, təşəkkürlər.', type: 'site', isApproved: true, date: new Date().toISOString(), rating: 5 },
+    { id: 'c3', author: 'Aysel K.', content: 'Ən ucuz qiymətlər burdadır.', type: 'site', isApproved: true, date: new Date().toISOString(), rating: 5 }
   ]);
 
   useEffect(() => {
@@ -593,8 +605,12 @@ export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
   const addProduct = (product: Product) => { setProducts(prev => [...prev, product]); logActivity('Product Added', product.title); }
   const addProducts = (newProducts: Product[]) => setProducts(prev => [...prev, ...newProducts]);
   const deleteProduct = (productId: string) => { setProducts(prev => prev.filter(p => p.id !== productId)); logActivity('Product Deleted', productId); }
+  const togglePopularProduct = (productId: string) => { setProducts(prev => prev.map(p => p.id === productId ? { ...p, isPopular: !p.isPopular } : p)); logActivity('Product Popular Toggled', productId); }
+
   const addCategory = (category: Category) => { setCategories(prev => [...prev, category]); logActivity('Category Added', category.name); }
   const deleteCategory = (categoryId: string) => setCategories(prev => prev.filter(c => c.id !== categoryId));
+  const togglePopularCategory = (categoryId: string) => { setCategories(prev => prev.map(c => c.id === categoryId ? { ...c, isPopular: !c.isPopular } : c)); logActivity('Category Popular Toggled', categoryId); }
+
   const updateSiteSettings = (settings: Partial<SiteSettings>) => { setSiteSettings(prev => ({ ...prev, ...settings })); logActivity('Settings Updated', 'Sayt ayarları dəyişdirildi.'); }
   const addPaymentMethod = (method: PaymentMethod) => setPaymentMethods(prev => [...prev, method]);
   const updatePaymentMethod = (id: string, details: Partial<PaymentMethod>) => setPaymentMethods(prev => prev.map(pm => pm.id === id ? { ...pm, ...details } : pm));
@@ -619,19 +635,26 @@ export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
   const toggleCommentApproval = (id: string) => setComments(prev => prev.map(c => c.id === id ? {...c, isApproved: !c.isApproved} : c));
   const deleteComment = (id: string) => setComments(prev => prev.filter(c => c.id !== id));
 
+  // Hero Slides Logic
+  const addHeroSlide = (slide: HeroSlide) => { setHeroSlides(prev => [...prev, slide]); logActivity('Hero Slide Added', slide.title); }
+  const deleteHeroSlide = (id: string) => { setHeroSlides(prev => prev.filter(s => s.id !== id)); logActivity('Hero Slide Deleted', id); }
+
   return (
     <AppContext.Provider value={{ 
       user, usersList, isAuthenticated: !!user,
       products, categories, orders, paymentMethods, promoCodes, siteSettings, cart, notifications,
       stocks, activityLogs,
-      blogs, agreements, comments,
+      blogs, agreements, comments, heroSlides,
       login, register, logout, requestPasswordReset, updateUserProfile, adminUpdateUserPassword, toggleUserBan, generateResetLink, confirmPasswordReset, changePassword,
       addToCart, updateCartQuantity, removeFromCart, clearCart,
       placeOrder, placeBalanceOrder, processOrder, completeOrder, cancelOrder, updateUserBalance, markNotificationRead, clearNotifications,
       addPaymentMethod, updatePaymentMethod, deletePaymentMethod, addPromoCode, deletePromoCode, togglePromoCode,
-      addProduct, addProducts, deleteProduct, addCategory, deleteCategory, updateSiteSettings,
+      addProduct, addProducts, deleteProduct, togglePopularProduct,
+      addCategory, deleteCategory, togglePopularCategory,
+      updateSiteSettings,
       addBlog, deleteBlog, addAgreement, deleteAgreement, toggleCommentApproval, deleteComment, addComment,
       addStock, deleteStock, toggleWishlist,
+      addHeroSlide, deleteHeroSlide,
       giveaways: [], 
       joinGiveaway: () => {}, 
       mysteryBoxes: [], 
