@@ -29,18 +29,24 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
   const isAdminPage = location.pathname.startsWith('/admin');
   const isAuthPage = location.pathname === '/auth';
 
-  // FIX: pt-24 on Desktop, pt-20 on Mobile to prevent header overlap
+  // FIX: 
+  // Desktop Header ~80px -> pt-24 (96px)
+  // Mobile Header (2 rows) ~110px -> pt-[120px]
+  // Mobile Bottom Nav ~64px -> pb-[80px]
+  
   return (
     <div className="flex flex-col min-h-screen">
       {!isAdminPage && !isAuthPage && <Navbar />}
-      <main className={`flex-grow relative ${!isAdminPage && !isAuthPage ? 'pt-24 pb-24 md:pb-0' : ''}`}>
+      
+      <main className={`flex-grow relative ${!isAdminPage && !isAuthPage ? 'pt-[120px] md:pt-24 pb-[80px] md:pb-0' : ''}`}>
         {children}
       </main>
+      
       {!isAdminPage && !isAuthPage && <Footer />}
       {!isAdminPage && !isAuthPage && <BottomNav />}
       {!isAdminPage && !isAuthPage && <ChatWidget />}
-      {!isAdminPage && !isAuthPage && <CartWidget />}
-      {!isAdminPage && !isAuthPage && <FloatingBalance />}
+      {/* Removed CartWidget as BottomNav now has Cart */}
+      {/* {!isAdminPage && !isAuthPage && <FloatingBalance />}  <- Removed per request to move balance to header */}
     </div>
   );
 };
