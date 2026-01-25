@@ -49,14 +49,14 @@ const CartWidget = () => {
 
   return (
     <>
-      {/* Floating Trigger Button (Left Side) */}
+      {/* Floating Trigger Button (Hidden on Mobile, Positioned left of Chat on Desktop) */}
       <button 
         onClick={openCart}
-        className="fixed bottom-24 md:bottom-6 left-6 z-50 bg-gradient-to-tr from-primary to-secondary p-3.5 rounded-full shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:scale-110 transition-transform active:scale-95 group"
+        className="hidden md:flex items-center justify-center fixed bottom-6 right-24 z-50 bg-gradient-to-tr from-primary to-secondary w-14 h-14 rounded-full shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:scale-110 transition-transform active:scale-95 group"
       >
-        <ShoppingCart className="w-6 h-6 text-white" />
+        <ShoppingCart className="w-7 h-7 text-white" />
         {cart.length > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-[#0F1115] animate-bounce">
+            <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center border-2 border-[#0F1115] animate-bounce">
                 {cart.length}
             </span>
         )}

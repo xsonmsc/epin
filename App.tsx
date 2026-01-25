@@ -46,12 +46,8 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
       {!isAdminPage && !isAuthPage && <BottomNav />}
       {!isAdminPage && !isAuthPage && <ChatWidget />}
       
-      {/* Floating Cart - Hidden on Mobile to prevent duplicate with BottomNav */}
-      {!isAdminPage && !isAuthPage && (
-        <div className="hidden md:block">
-           <CartWidget />
-        </div>
-      )}
+      {/* Cart Widget contains the Drawer logic, must be present on mobile too */}
+      {!isAdminPage && !isAuthPage && <CartWidget />}
     </div>
   );
 };
