@@ -1,13 +1,85 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../store';
 import { Order, OrderStatus, ProductType, Product, PromoCode, PaymentMethod, Blog, Agreement, HeroSlide } from '../types';
 import { 
   BarChart3, ShoppingBag, Package, Users, Settings, LogOut, 
   Plus, Trash2, Search, Edit3, X, Check, Eye, Wallet, 
-  Database, Infinity, Menu, FileText, MessageSquare, CreditCard, Globe, Shield, Image as ImageIcon, Save, Star, Layout, Link as LinkIcon, Info, Tag
+  Database, Infinity, Menu, FileText, MessageSquare, CreditCard, Globe, Shield, Image as ImageIcon, Save, Star, Layout, Link as LinkIcon, Info, Tag, Upload, Monitor
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+// --- REUSABLE IMAGE INPUT COMPONENT ---
+const ImageInput = ({ label, value, onChange, placeholder = "Şəkil" }: { label: string, value: string, onChange: (val: string) => void, placeholder?: string }) => {
+    const [mode, setMode] = useState<'url' | 'upload'>('url');
+    const fileRef = useRef<HTMLInputElement>(null);
+
+    const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const url = URL.createObjectURL(e.target.files[0]);
+            onChange(url);
+        }
+    };
+
+    return (
+        <div className="space-y-2">
+            <label className="block text-xs uppercase font-bold text-gray-400">{label}</label>
+            
+            <div className="flex bg-surfaceHighlight rounded-t-xl overflow-hidden border border-white/10 border-b-0">
+                <button 
+                    onClick={() => setMode('url')} 
+                    className={`flex-1 py-2 text-xs font-bold flex items-center justify-center gap-2 transition-colors ${mode === 'url' ? 'bg-primary text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                >
+                    <LinkIcon className="w-3 h-3" /> Link (URL)
+                </button>
+                <button 
+                    onClick={() => setMode('upload')} 
+                    className={`flex-1 py-2 text-xs font-bold flex items-center justify-center gap-2 transition-colors ${mode === 'upload' ? 'bg-primary text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                >
+                    <Monitor className="w-3 h-3" /> PC-dən Yüklə
+                </button>
+            </div>
+
+            <div className="relative">
+                {mode === 'url' ? (
+                    <div className="relative">
+                        <input 
+                            className="w-full bg-surfaceHighlight border border-white/10 rounded-b-xl p-3 text-white focus:border-primary outline-none text-sm" 
+                            placeholder="https://example.com/image.jpg" 
+                            value={value.startsWith('blob:') ? '' : value} 
+                            onChange={e => onChange(e.target.value)} 
+                        />
+                        {value && !value.startsWith('blob:') && (
+                            <div className="absolute right-3 top-3 w-6 h-6 rounded overflow-hidden border border-white/20">
+                                <img src={value} className="w-full h-full object-cover" />
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div 
+                        onClick={() => fileRef.current?.click()}
+                        className="w-full bg-surfaceHighlight border-2 border-dashed border-white/10 rounded-b-xl h-24 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors group relative overflow-hidden"
+                    >
+                        {value ? (
+                            <img src={value} className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-30 transition-opacity" />
+                        ) : null}
+                        <div className="relative z-10 flex flex-col items-center">
+                            <Upload className="w-5 h-5 text-gray-400 group-hover:text-white mb-1" />
+                            <span className="text-xs text-gray-500 group-hover:text-white font-bold">Şəkil Seçmək üçün Toxun</span>
+                        </div>
+                        <input type="file" ref={fileRef} hidden accept="image/*" onChange={handleUpload} />
+                    </div>
+                )}
+            </div>
+            
+            {value && (
+                <div className="mt-2 text-xs text-green-400 flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Şəkil seçildi
+                </div>
+            )}
+        </div>
+    );
+};
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -43,7 +115,6 @@ const Admin = () => {
   const [productForm, setProductForm] = useState<Partial<Product>>({
     title: '', categoryId: '', subCategory: '', price: 0, costPrice: 0, discountPercent: 0, type: ProductType.LICENSE_KEY, image: '', description: '', requiresInput: false, durationDays: 0, isLifetime: false, isPopular: false
   });
-  const prodFileRef = useRef<HTMLInputElement>(null);
 
   // Stock
   const [stockProduct, setStockProduct] = useState('');
@@ -96,10 +167,6 @@ const Admin = () => {
               case 'slide': deleteHeroSlide(id); break;
           }
       }
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (url: string) => void) => {
-      if(e.target.files?.[0]) setter(URL.createObjectURL(e.target.files[0]));
   };
 
   // Product Logic
@@ -229,7 +296,7 @@ const Admin = () => {
               </div>
           )}
 
-          {/* ... [ORDERS SECTION UNCHANGED] ... */}
+          {/* ORDERS */}
           {activeTab === 'orders' && (
               <div className="space-y-6 animate-fade-in">
                    <div className="flex justify-between items-center mb-6">
@@ -339,10 +406,11 @@ const Admin = () => {
                                       </div>
                                   </div>
 
-                                  <div className="border-2 border-dashed border-white/10 rounded-xl h-40 flex items-center justify-center cursor-pointer hover:bg-white/5 transition-colors overflow-hidden relative" onClick={() => prodFileRef.current?.click()}>
-                                      {productForm.image ? <img src={productForm.image} className="h-full w-full object-cover"/> : <div className="text-center"><div className="bg-white/10 p-3 rounded-full inline-block mb-2"><Plus className="w-6 h-6 text-gray-400"/></div><p className="text-gray-500 text-xs uppercase font-bold">Şəkil Seçin</p></div>}
-                                      <input type="file" hidden ref={prodFileRef} onChange={e => handleImageUpload(e, url => setProductForm({...productForm, image: url}))} />
-                                  </div>
+                                  <ImageInput 
+                                    label="Məhsul Şəkli" 
+                                    value={productForm.image || ''} 
+                                    onChange={(val) => setProductForm({...productForm, image: val})} 
+                                  />
                                   <p className="text-xs text-gray-500 flex items-center gap-1"><Info className="w-3 h-3"/> Tövsiyə: 800x800px (1:1)</p>
                               </div>
                               <div className="space-y-4">
@@ -423,8 +491,7 @@ const Admin = () => {
               </div>
           )}
 
-          {/* ... [REST OF THE FILE UNCHANGED] ... */}
-          {/* STOCK, USERS, CONTENT, FINANCE, SETTINGS, DESIGN */}
+          {/* STOCK */}
           {activeTab === 'stock' && (
               <div className="space-y-6 animate-fade-in">
                   <div className="glass-card p-6 rounded-2xl border border-white/10">
@@ -471,43 +538,7 @@ const Admin = () => {
               </div>
           )}
 
-          {/* ... [Rest of tabs are the same, just ensured they render] ... */}
-          {activeTab === 'users' && (
-              <div className="space-y-6 animate-fade-in">
-                  <div className="glass-card p-6 rounded-2xl border border-white/10">
-                      <div className="flex justify-between items-center gap-4 mb-6">
-                           <h3 className="text-xl font-bold flex items-center gap-2"><Users className="text-primary"/> İstifadəçilər</h3>
-                           <div className="relative w-full md:w-64">
-                               <Search className="absolute left-3 top-3 text-gray-500 w-4 h-4" />
-                               <input className="w-full bg-surfaceHighlight rounded-xl pl-10 pr-4 py-2 text-white border border-white/5 focus:border-primary outline-none" placeholder="Email və ya ad axtar..." value={userSearch} onChange={e => setUserSearch(e.target.value)} />
-                           </div>
-                      </div>
-                      {/* User Table */}
-                      <div className="overflow-x-auto">
-                          <table className="w-full text-left text-sm">
-                              <thead className="bg-white/5 text-gray-400 uppercase text-xs"><tr><th className="p-4">İstifadəçi</th><th className="p-4">Balans</th><th className="p-4">Status</th><th className="p-4 text-right">Əməliyyat</th></tr></thead>
-                              <tbody className="divide-y divide-white/5">
-                                  {usersList.filter(u => u.name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.includes(userSearch)).map(u => (
-                                      <tr key={u.id} className="hover:bg-white/5">
-                                          <td className="p-4">
-                                              <p className="font-bold text-white">{u.name}</p>
-                                              <p className="text-xs text-gray-500">{u.email}</p>
-                                          </td>
-                                          <td className="p-4 font-mono font-bold text-primary">{u.balance.toFixed(2)} ₼</td>
-                                          <td className="p-4">{u.isBanned ? <span className="text-red-500 font-bold text-xs">BANNED</span> : <span className="text-green-500 font-bold text-xs">AKTİV</span>}</td>
-                                          <td className="p-4 text-right flex justify-end gap-2">
-                                              <button onClick={() => { const amount = prompt("Artırılacaq məbləğ:"); if(amount) updateUserBalance(u.id, parseFloat(amount)); }} className="p-2 bg-green-500/10 text-green-400 rounded"><Wallet className="w-4 h-4"/></button>
-                                              <button onClick={() => toggleUserBan(u.id)} className="p-2 bg-red-500/10 text-red-400 rounded"><Shield className="w-4 h-4"/></button>
-                                          </td>
-                                      </tr>
-                                  ))}
-                              </tbody>
-                          </table>
-                      </div>
-                  </div>
-              </div>
-          )}
-
+          {/* DESIGN (Banners) */}
           {activeTab === 'design' && (
               <div className="space-y-6 animate-fade-in">
                    <div className="glass-card p-6 rounded-2xl border border-white/10">
@@ -519,7 +550,7 @@ const Admin = () => {
                                <textarea className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Təsvir (Description)" value={slideForm.desc} onChange={e => setSlideForm({...slideForm, desc: e.target.value})}></textarea>
                            </div>
                            <div className="space-y-3">
-                               <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Şəkil URL" value={slideForm.image} onChange={e => setSlideForm({...slideForm, image: e.target.value})} />
+                               <ImageInput label="Banner Şəkli" value={slideForm.image || ''} onChange={(val) => setSlideForm({...slideForm, image: val})} />
                                <p className="text-xs text-gray-500 flex items-center gap-1"><Info className="w-3 h-3"/> Tövsiyə: 1920x600px (3:1)</p>
                                <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Link (Məs: /category/cat_pubg)" value={slideForm.link} onChange={e => setSlideForm({...slideForm, link: e.target.value})} />
                                <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Düymə Yazısı" value={slideForm.btnText} onChange={e => setSlideForm({...slideForm, btnText: e.target.value})} />
@@ -554,7 +585,43 @@ const Admin = () => {
               </div>
           )}
 
-          {/* Content, Finance, Settings tabs are basically same structure, ensuring they render */}
+          {/* USERS */}
+          {activeTab === 'users' && (
+              <div className="space-y-6 animate-fade-in">
+                  <div className="glass-card p-6 rounded-2xl border border-white/10">
+                      <div className="flex justify-between items-center gap-4 mb-6">
+                           <h3 className="text-xl font-bold flex items-center gap-2"><Users className="text-primary"/> İstifadəçilər</h3>
+                           <div className="relative w-full md:w-64">
+                               <Search className="absolute left-3 top-3 text-gray-500 w-4 h-4" />
+                               <input className="w-full bg-surfaceHighlight rounded-xl pl-10 pr-4 py-2 text-white border border-white/5 focus:border-primary outline-none" placeholder="Email və ya ad axtar..." value={userSearch} onChange={e => setUserSearch(e.target.value)} />
+                           </div>
+                      </div>
+                      <div className="overflow-x-auto">
+                          <table className="w-full text-left text-sm">
+                              <thead className="bg-white/5 text-gray-400 uppercase text-xs"><tr><th className="p-4">İstifadəçi</th><th className="p-4">Balans</th><th className="p-4">Status</th><th className="p-4 text-right">Əməliyyat</th></tr></thead>
+                              <tbody className="divide-y divide-white/5">
+                                  {usersList.filter(u => u.name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.includes(userSearch)).map(u => (
+                                      <tr key={u.id} className="hover:bg-white/5">
+                                          <td className="p-4">
+                                              <p className="font-bold text-white">{u.name}</p>
+                                              <p className="text-xs text-gray-500">{u.email}</p>
+                                          </td>
+                                          <td className="p-4 font-mono font-bold text-primary">{u.balance.toFixed(2)} ₼</td>
+                                          <td className="p-4">{u.isBanned ? <span className="text-red-500 font-bold text-xs">BANNED</span> : <span className="text-green-500 font-bold text-xs">AKTİV</span>}</td>
+                                          <td className="p-4 text-right flex justify-end gap-2">
+                                              <button onClick={() => { const amount = prompt("Artırılacaq məbləğ:"); if(amount) updateUserBalance(u.id, parseFloat(amount)); }} className="p-2 bg-green-500/10 text-green-400 rounded"><Wallet className="w-4 h-4"/></button>
+                                              <button onClick={() => toggleUserBan(u.id)} className="p-2 bg-red-500/10 text-red-400 rounded"><Shield className="w-4 h-4"/></button>
+                                          </td>
+                                      </tr>
+                                  ))}
+                              </tbody>
+                          </table>
+                      </div>
+                  </div>
+              </div>
+          )}
+
+          {/* CONTENT (News, Rules, Comments) */}
           {activeTab === 'content' && (
               <div className="space-y-6 animate-fade-in">
                   <div className="flex gap-4 mb-6 border-b border-white/10 pb-2">
@@ -562,21 +629,19 @@ const Admin = () => {
                       <button onClick={() => setContentSubTab('rules')} className={`pb-2 px-4 font-bold ${contentSubTab === 'rules' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}>Qaydalar</button>
                       <button onClick={() => setContentSubTab('comments')} className={`pb-2 px-4 font-bold ${contentSubTab === 'comments' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}>Rəylər</button>
                   </div>
-                  {/* News form, Rules form, Comments list... (Same as before) */}
+
                   {contentSubTab === 'news' && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {/* Blog Form */}
                           <div className="glass-card p-6 rounded-2xl border border-white/10">
                               <h4 className="font-bold mb-4">Yeni Xəbər</h4>
                               <div className="space-y-3">
                                   <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Başlıq" value={blogForm.title} onChange={e => setBlogForm({...blogForm, title: e.target.value})} />
-                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Şəkil URL" value={blogForm.image} onChange={e => setBlogForm({...blogForm, image: e.target.value})} />
+                                  <ImageInput label="Xəbər Şəkli" value={blogForm.image || ''} onChange={(val) => setBlogForm({...blogForm, image: val})} />
                                   <p className="text-xs text-gray-500 flex items-center gap-1"><Info className="w-3 h-3"/> Tövsiyə: 1200x600px (2:1)</p>
                                   <textarea className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white h-32" placeholder="Məzmun" value={blogForm.content} onChange={e => setBlogForm({...blogForm, content: e.target.value})}></textarea>
                                   <button onClick={() => { addBlog({id: `b-${Date.now()}`, date: new Date().toISOString(), ...blogForm}); setBlogForm({title:'',content:'',image:''}); }} className="w-full bg-primary py-3 rounded-xl font-bold">Paylaş</button>
                               </div>
                           </div>
-                          {/* Blog List */}
                           <div className="space-y-4">
                               {blogs.map(b => (
                                   <div key={b.id} className="glass-card p-4 rounded-xl flex gap-4 items-center">
@@ -591,6 +656,7 @@ const Admin = () => {
                           </div>
                       </div>
                   )}
+
                   {contentSubTab === 'rules' && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="glass-card p-6 rounded-2xl border border-white/10">
@@ -600,7 +666,7 @@ const Admin = () => {
                               <button onClick={() => { addAgreement({id: `a-${Date.now()}`, ...ruleForm}); setRuleForm({title:'',content:''}); }} className="w-full bg-primary py-3 rounded-xl font-bold">Əlavə Et</button>
                           </div>
                           <div className="space-y-4">
-                              {addAgreement && useApp().agreements.map(a => (
+                              {useApp().agreements.map(a => (
                                   <div key={a.id} className="glass-card p-4 rounded-xl">
                                       <div className="flex justify-between items-center mb-2">
                                           <h5 className="font-bold text-primary">{a.title}</h5>
@@ -612,6 +678,7 @@ const Admin = () => {
                           </div>
                       </div>
                   )}
+
                   {contentSubTab === 'comments' && (
                       <div className="glass-card p-6 rounded-2xl border border-white/10">
                           <h4 className="font-bold mb-4">İstifadəçi Rəyləri</h4>
@@ -632,16 +699,16 @@ const Admin = () => {
               </div>
           )}
 
-          {/* Finance and Settings tabs basically same logic */}
+          {/* FINANCE (Payments, Promos) */}
           {activeTab === 'finance' && (
               <div className="space-y-6 animate-fade-in">
                    <div className="flex gap-4 mb-6 border-b border-white/10 pb-2">
                       <button onClick={() => setFinanceSubTab('payments')} className={`pb-2 px-4 font-bold ${financeSubTab === 'payments' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}>Ödəniş Üsulları</button>
                       <button onClick={() => setFinanceSubTab('promos')} className={`pb-2 px-4 font-bold ${financeSubTab === 'promos' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}>Promo Kodlar</button>
                   </div>
+
                   {financeSubTab === 'payments' && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {/* Payment Form */}
                           <div className="glass-card p-6 rounded-2xl border border-white/10">
                               <h4 className="font-bold mb-4">Yeni Ödəniş Üsulu</h4>
                               <div className="space-y-3">
@@ -651,7 +718,6 @@ const Admin = () => {
                                   <button onClick={() => { addPaymentMethod({id: `pm-${Date.now()}`, ...payForm} as PaymentMethod); setPayForm({name:'', details:'', instructions:'', isActive:true, icon:'credit-card'}); }} className="w-full bg-primary py-3 rounded-xl font-bold">Əlavə Et</button>
                               </div>
                           </div>
-                          {/* List */}
                           <div className="space-y-4">
                               {paymentMethods.map(pm => (
                                   <div key={pm.id} className="glass-card p-4 rounded-xl flex justify-between items-center">
@@ -668,9 +734,9 @@ const Admin = () => {
                           </div>
                       </div>
                   )}
+
                   {financeSubTab === 'promos' && (
                       <div className="glass-card p-6 rounded-2xl border border-white/10">
-                          {/* Promo Form and List */}
                           <h4 className="font-bold mb-4">Promo Kodlar</h4>
                           <div className="flex gap-4 mb-6">
                               <input className="flex-1 bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white uppercase" placeholder="Kod" value={promoForm.code} onChange={e => setPromoForm({...promoForm, code: e.target.value})} />
@@ -690,51 +756,73 @@ const Admin = () => {
               </div>
           )}
 
+          {/* SETTINGS (Global, Categories) */}
           {activeTab === 'settings' && (
               <div className="space-y-6 animate-fade-in">
-                  {/* Settings tabs */}
                   <div className="flex gap-4 mb-6 border-b border-white/10 pb-2">
                       <button onClick={() => setSettingsSubTab('general')} className={`pb-2 px-4 font-bold ${settingsSubTab === 'general' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}>Ümumi Ayarlar</button>
                       <button onClick={() => setSettingsSubTab('categories')} className={`pb-2 px-4 font-bold ${settingsSubTab === 'categories' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}>Kateqoriyalar</button>
                   </div>
+
                   {settingsSubTab === 'general' && (
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                          {/* General Settings Form */}
                           <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-4">
                               <h4 className="font-bold text-lg text-primary mb-2 flex items-center gap-2"><Globe className="w-5 h-5"/> Sayt Məlumatları</h4>
                               <div>
                                   <label className="text-xs text-gray-500 block mb-1">Sayt Adı</label>
                                   <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" value={generalForm.siteName} onChange={e => setGeneralForm({...generalForm, siteName: e.target.value})} />
                               </div>
-                              {/* ... other inputs like HeroTitle, LogoUrl ... */}
+                              <ImageInput label="Loqo URL" value={generalForm.logoUrl} onChange={(val) => setGeneralForm({...generalForm, logoUrl: val})} />
+                              <div>
+                                  <label className="text-xs text-gray-500 block mb-1">Hero Başlıq</label>
+                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" value={generalForm.heroTitle} onChange={e => setGeneralForm({...generalForm, heroTitle: e.target.value})} />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500 block mb-1">Hero Alt Başlıq</label>
+                                  <textarea className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white h-20" value={generalForm.heroSubtitle} onChange={e => setGeneralForm({...generalForm, heroSubtitle: e.target.value})}></textarea>
+                              </div>
                               <div>
                                   <label className="text-xs text-gray-500 block mb-1">Footer Yazısı</label>
                                   <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" value={generalForm.footerText} onChange={e => setGeneralForm({...generalForm, footerText: e.target.value})} />
                               </div>
                           </div>
-                          {/* Contact Info */}
+
                           <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-4">
                               <h4 className="font-bold text-lg text-primary mb-2 flex items-center gap-2"><MessageSquare className="w-5 h-5"/> Əlaqə & Sosial</h4>
                               <div>
                                   <label className="text-xs text-gray-500 block mb-1">WhatsApp Nömrəsi</label>
                                   <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" value={generalForm.whatsappNumber} onChange={e => setGeneralForm({...generalForm, whatsappNumber: e.target.value})} />
                               </div>
-                              {/* ... other contact inputs ... */}
+                              <div>
+                                  <label className="text-xs text-gray-500 block mb-1">Email</label>
+                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" value={generalForm.contactEmail || ''} onChange={e => setGeneralForm({...generalForm, contactEmail: e.target.value})} />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500 block mb-1">Ünvan</label>
+                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" value={generalForm.contactAddress || ''} onChange={e => setGeneralForm({...generalForm, contactAddress: e.target.value})} />
+                              </div>
+                              <div className="border-t border-white/10 pt-4 mt-2">
+                                  <p className="text-xs font-bold text-gray-400 mb-2 uppercase">Sosial Linkler</p>
+                                  <div className="grid grid-cols-2 gap-3">
+                                      <input className="bg-surfaceHighlight border border-white/10 rounded-xl p-2 text-sm text-white" placeholder="Instagram" value={generalForm.socials.instagram} onChange={e => setGeneralForm({...generalForm, socials: {...generalForm.socials, instagram: e.target.value}})} />
+                                      <input className="bg-surfaceHighlight border border-white/10 rounded-xl p-2 text-sm text-white" placeholder="Telegram" value={generalForm.socials.telegram} onChange={e => setGeneralForm({...generalForm, socials: {...generalForm.socials, telegram: e.target.value}})} />
+                                      <input className="bg-surfaceHighlight border border-white/10 rounded-xl p-2 text-sm text-white" placeholder="TikTok" value={generalForm.socials.tiktok} onChange={e => setGeneralForm({...generalForm, socials: {...generalForm.socials, tiktok: e.target.value}})} />
+                                  </div>
+                              </div>
                               <button onClick={saveGeneralSettings} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 mt-4"><Save className="w-5 h-5"/> Yadda Saxla</button>
                           </div>
                       </div>
                   )}
+
                   {settingsSubTab === 'categories' && (
                       <div className="glass-card p-6 rounded-2xl border border-white/10">
-                          {/* Categories Form */}
                           <h4 className="font-bold mb-4">Kateqoriyaları İdarə Et</h4>
-                          <div className="flex gap-4 mb-6">
+                          <div className="flex flex-col md:flex-row gap-4 mb-6">
                               <input className="flex-1 bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Ad" value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} />
                               <div className="flex-1">
-                                  <input className="w-full bg-surfaceHighlight border border-white/10 rounded-xl p-3 text-white" placeholder="Şəkil URL" value={catForm.image} onChange={e => setCatForm({...catForm, image: e.target.value})} />
-                                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Info className="w-3 h-3"/> Tövsiyə: 500x500px (1:1)</p>
+                                  <ImageInput label="Kateqoriya Şəkli" value={catForm.image} onChange={(val) => setCatForm({...catForm, image: val})} />
                               </div>
-                              <button onClick={() => { addCategory({id: `c-${Date.now()}`, name: catForm.name, image: catForm.image, isPopular: false}); setCatForm({name:'', image:''}); }} className="bg-white text-black px-6 rounded-xl font-bold h-12">Əlavə Et</button>
+                              <button onClick={() => { addCategory({id: `c-${Date.now()}`, name: catForm.name, image: catForm.image, isPopular: false}); setCatForm({name:'', image:''}); }} className="bg-white text-black px-6 rounded-xl font-bold h-auto py-3">Əlavə Et</button>
                           </div>
                           <table className="w-full text-left text-sm">
                               <thead className="bg-white/5 text-gray-400 uppercase text-xs"><tr><th className="p-3">Ad</th><th className="p-3">Populyar</th><th className="p-3 text-right">Sil</th></tr></thead>

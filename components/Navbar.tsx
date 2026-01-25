@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Bell, LogOut, ChevronDown, User as UserIcon, Heart, Search, LogIn, UserPlus } from 'lucide-react';
+import { Menu, X, Bell, LogOut, ChevronDown, User as UserIcon, Heart, Search, LogIn, UserPlus, Plus } from 'lucide-react';
 import { useApp } from '../store';
 import { Notification } from '../types';
 
@@ -78,13 +78,13 @@ const Navbar = () => {
   };
 
   return (
-    <nav className={`fixed w-full z-50 transition-all duration-300 border-b ${scrolled ? 'glass border-white/10 h-20' : 'bg-transparent border-transparent h-24'}`}>
+    <nav className={`fixed w-full z-50 transition-all duration-300 border-b ${scrolled ? 'glass border-white/5 h-20' : 'bg-transparent border-transparent h-24'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
         <div className="flex items-center justify-between h-full gap-4">
           
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
               D
             </div>
             <span className="text-2xl font-bold text-white tracking-tight hidden sm:block">
@@ -131,7 +131,7 @@ const Navbar = () => {
                       <button onClick={() => setNotifOpen(!notifOpen)} className="relative p-2 text-gray-400 hover:text-white transition-colors">
                           <Bell className="w-6 h-6" />
                           {unreadCount > 0 && (
-                              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-background animate-pulse"></span>
+                              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-accent rounded-full ring-2 ring-background animate-pulse"></span>
                           )}
                       </button>
 
@@ -179,11 +179,6 @@ const Navbar = () => {
 
                       {profileOpen && (
                           <div className="absolute right-0 mt-4 w-56 glass border border-white/10 rounded-2xl shadow-2xl p-2 z-50 animate-slide-up origin-top-right">
-                              <div className="px-3 py-2 border-b border-white/5 mb-2 lg:hidden">
-                                  <p className="text-sm font-bold text-white truncate">{user?.name}</p>
-                                  <p className="text-xs text-primary mt-1 font-mono">{user?.balance.toFixed(2)} ₼</p>
-                              </div>
-                              
                               <Link to="/profile" onClick={() => setProfileOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
                                   <UserIcon className="w-4 h-4" /> Profil
                               </Link>
@@ -221,11 +216,6 @@ const Navbar = () => {
 
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center gap-4">
-             {isAuthenticated && (
-                <div className="text-right">
-                    <p className="text-xs font-bold text-white">{user?.balance.toFixed(2)} ₼</p>
-                </div>
-             )}
              <button onClick={() => setIsOpen(!isOpen)} className="text-white p-2 bg-white/5 rounded-lg border border-white/10">
                 {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
              </button>
@@ -238,6 +228,30 @@ const Navbar = () => {
         <div className="md:hidden glass border-t border-white/10 absolute top-full w-full animate-slide-up h-[calc(100vh-80px)] overflow-y-auto">
           <div className="p-4 space-y-4">
             
+            {/* User Info Card (Mobile) */}
+            {isAuthenticated && (
+                <div className="bg-gradient-to-br from-surface to-surfaceHighlight p-4 rounded-2xl border border-white/10 flex flex-col gap-4 shadow-lg">
+                    <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                            {user?.name.charAt(0)}
+                        </div>
+                        <div>
+                            <p className="font-bold text-white text-lg">{user?.name}</p>
+                            <p className="text-xs text-gray-400">{user?.email}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between bg-black/20 p-3 rounded-xl border border-white/5">
+                        <div>
+                            <p className="text-xs text-gray-400 uppercase font-bold">Balans</p>
+                            <p className="text-xl font-mono text-primary font-bold">{user?.balance.toFixed(2)} ₼</p>
+                        </div>
+                        <button onClick={() => { navigate('/balance'); setIsOpen(false); }} className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors">
+                            <Plus className="w-4 h-4" /> Artır
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Mobile Search */}
             <form onSubmit={handleSearch} className="relative">
                 <input 
@@ -277,17 +291,10 @@ const Navbar = () => {
                  </div>
             ) : (
                 <div className="space-y-2">
-                    <Link to="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-4 py-4 rounded-xl bg-white/5 border border-white/10 text-white">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white text-xs font-bold">
-                            {user?.name.charAt(0)}
-                        </div>
-                        <div className="flex-1">
-                            <p className="font-bold text-sm">{user?.name}</p>
-                            <p className="text-xs text-gray-400">{user?.email}</p>
-                        </div>
-                        <p className="font-mono text-primary font-bold">{user?.balance.toFixed(2)} ₼</p>
+                    <Link to="/profile" onClick={() => setIsOpen(false)} className="block text-center px-4 py-4 rounded-xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10">
+                        Profilə Get
                     </Link>
-                    <button onClick={() => { handleLogout(); setIsOpen(false); }} className="w-full text-left px-4 py-4 rounded-xl text-base font-medium text-red-400 bg-red-500/5 border border-red-500/10">
+                    <button onClick={() => { handleLogout(); setIsOpen(false); }} className="w-full text-center px-4 py-4 rounded-xl text-base font-bold text-red-400 bg-red-500/5 border border-red-500/10 hover:bg-red-500/10">
                         Çıxış Et
                     </button>
                 </div>
