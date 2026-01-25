@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import BottomNav from './components/BottomNav';
@@ -54,7 +54,7 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
 const App = () => {
   return (
     <AppProvider>
-      <HashRouter>
+      <Router>
         <Layout>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -74,7 +74,7 @@ const App = () => {
             <Route path="/admin" element={<Admin />} />
           </Routes>
         </Layout>
-      </HashRouter>
+      </Router>
     </AppProvider>
   );
 };
