@@ -12,9 +12,9 @@ import Auth from './pages/Auth';
 import Cart from './pages/Cart';
 import News from './pages/News';
 import BlogView from './pages/BlogView'; 
-import Rules from './pages/Rules'; // Keep for static fallback
-import DynamicPage from './pages/DynamicPage'; // New CMS Page
-import AllCategories from './pages/AllCategories'; // New Grid Page
+import Rules from './pages/Rules'; 
+import DynamicPage from './pages/DynamicPage'; 
+import AllCategories from './pages/AllCategories'; 
 import Balance from './pages/Balance';
 import Contact from './pages/Contact'; 
 import CategoryPage from './pages/CategoryPage';
@@ -30,23 +30,24 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
   const isAuthPage = location.pathname === '/auth';
 
   // FIX: 
-  // Desktop Header ~80px -> pt-24 (96px)
-  // Mobile Header (2 rows) ~110px -> pt-[120px]
-  // Mobile Bottom Nav ~64px -> pb-[80px]
+  // Desktop Header (1 row ~80px) -> pt-20
+  // Mobile Header (2 rows ~112px) -> pt-[112px]
+  // Mobile Bottom Nav (~64px + safe area) -> pb-[80px]
   
   return (
     <div className="flex flex-col min-h-screen">
       {!isAdminPage && !isAuthPage && <Navbar />}
       
-      <main className={`flex-grow relative ${!isAdminPage && !isAuthPage ? 'pt-[120px] md:pt-24 pb-[80px] md:pb-0' : ''}`}>
+      <main className={`flex-grow relative ${!isAdminPage && !isAuthPage ? 'pt-[112px] md:pt-20 pb-[80px] md:pb-0' : ''}`}>
         {children}
       </main>
       
       {!isAdminPage && !isAuthPage && <Footer />}
       {!isAdminPage && !isAuthPage && <BottomNav />}
       {!isAdminPage && !isAuthPage && <ChatWidget />}
-      {/* Removed CartWidget as BottomNav now has Cart */}
-      {/* {!isAdminPage && !isAuthPage && <FloatingBalance />}  <- Removed per request to move balance to header */}
+      
+      {/* CartWidget is always mounted to handle drawer state, handles its own visibility */}
+      {!isAdminPage && !isAuthPage && <CartWidget />}
     </div>
   );
 };

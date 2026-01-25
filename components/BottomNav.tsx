@@ -7,10 +7,10 @@ import { useApp } from '../store';
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, cart } = useApp();
+  const { user, cart, openCart } = useApp();
 
-  // Hide on Admin and Auth pages (and Checkout)
-  if (location.pathname.startsWith('/admin') || location.pathname === '/auth' || location.pathname === '/cart') {
+  // Hide on Admin and Auth pages (and Checkout Page itself, though we use drawer mostly)
+  if (location.pathname.startsWith('/admin') || location.pathname === '/auth') {
       return null;
   }
 
@@ -26,8 +26,8 @@ const BottomNav = () => {
 
   const navItems = [
       { icon: Home, label: 'Ana Səhifə', path: '/' },
-      { icon: LayoutGrid, label: 'Kataloq', path: '/categories' },
-      { icon: ShoppingCart, label: 'Səbət', path: '/cart', badge: cart.length },
+      { icon: LayoutGrid, label: 'Kateqoriyalar', path: '/categories' },
+      { icon: ShoppingCart, label: 'Səbət', action: openCart, badge: cart.length },
       { icon: MessageCircle, label: 'Dəstək', path: '/contact' },
       { icon: User, label: 'Hesabım', action: handleProfileClick, path: '/profile' }
   ];
@@ -41,7 +41,7 @@ const BottomNav = () => {
                 return (
                     <button 
                         key={idx}
-                        onClick={item.action || (() => navigate(item.path))}
+                        onClick={item.action || (() => navigate(item.path!))}
                         className={`flex flex-col items-center justify-center gap-1 h-full w-full relative group`}
                     >
                         <div className={`relative p-1 transition-all duration-300 ${active ? 'transform -translate-y-1' : ''}`}>
@@ -49,8 +49,8 @@ const BottomNav = () => {
                                 className={`w-6 h-6 transition-colors duration-300 ${active ? 'text-primary drop-shadow-[0_0_8px_rgba(139,92,246,0.6)]' : 'text-gray-500 group-active:scale-90'}`} 
                                 strokeWidth={active ? 2.5 : 2}
                             />
-                            {item.badge && item.badge > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-[#0F1115]">
+                            {item.badge !== undefined && item.badge > 0 && (
+                                <span className="absolute -top-1.5 -right-1.5 bg-primary text-black text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-[#0F1115] shadow-lg shadow-primary/50">
                                     {item.badge}
                                 </span>
                             )}

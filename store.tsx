@@ -15,13 +15,18 @@ interface AppContextType {
   siteSettings: SiteSettings;
   blogs: Blog[];
   agreements: Agreement[];
-  pages: Page[]; // New Pages State
+  pages: Page[]; 
   comments: Comment[];
   cart: CartItem[];
   notifications: Notification[];
   stocks: StockCode[]; 
   activityLogs: ActivityLog[]; 
   heroSlides: HeroSlide[];
+  
+  // UI State
+  isCartOpen: boolean;
+  openCart: () => void;
+  closeCart: () => void;
   
   // Auth
   login: (email: string, pass: string) => boolean;
@@ -127,6 +132,9 @@ const usePersistedState = <T,>(key: string, initialValue: T): [T, React.Dispatch
 };
 
 export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
+  // UI State
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
   // Use persisted state for critical data
   const [user, setUser] = usePersistedState<User | null>('ds_user', null);
   const [usersList, setUsersList] = usePersistedState<User[]>('ds_users', MOCK_USERS);
@@ -153,7 +161,6 @@ export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
     { id: 'a2', title: 'Zəmanət Şərtləri', content: 'Bütün məhsullara rəsmi zəmanət verilir...' }
   ]);
   
-  // Initialize Default Pages
   const [pages, setPages] = usePersistedState<Page[]>('ds_pages', [
       { id: 'pg1', title: 'Haqqımızda', slug: 'haqqimizda', content: 'GamePay Azərbaycanın ən böyük rəqəmsal oyun platformasıdır...', category: 'corporate', isActive: true },
       { id: 'pg2', title: 'Gizlilik Politikası', slug: 'gizlilik-politikasi', content: 'Sizin məlumatlarınız bizim üçün önəmlidir...', category: 'agreement', isActive: true },
@@ -174,6 +181,10 @@ export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
     })));
   }, [stocks]);
 
+  const openCart = () => setIsCartOpen(true);
+  const closeCart = () => setIsCartOpen(false);
+
+  // ... (Rest of the store logic same as before) ...
   const logActivity = (action: string, details: string, type: ActivityLog['type'] = 'info') => {
       const newLog: ActivityLog = {
           id: `log-${Date.now()}`,
@@ -373,6 +384,8 @@ export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
             }];
         }
     });
+    // Open cart automatically on add
+    setIsCartOpen(true);
   };
 
   const updateCartQuantity = (index: number, delta: number) => {
@@ -403,7 +416,6 @@ export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
             return false;
         }
         
-        // Immediate deduction from current session user state
         const newBalance = user.balance - totalPrice;
         const updatedUser = { ...user, balance: newBalance };
         setUser(updatedUser);
@@ -417,7 +429,6 @@ export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
         let isOrderLifetime = false;
 
         cart.forEach(item => {
-             // Handle lifetime logic
             if (item.isLifetime) {
                 isOrderLifetime = true;
             } else if (item.durationDays && item.durationDays > maxDuration) {
@@ -505,6 +516,7 @@ export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
     return true;
   };
 
+  // ... (Other order functions same as before) ...
   const placeBalanceOrder = async (amount: number, paymentMethodId: string, receiptFile: File): Promise<boolean> => {
     if (!user) return false;
     const method = paymentMethods.find(p => p.id === paymentMethodId);
@@ -572,13 +584,11 @@ export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
       }
       sendNotification(order.userId, "Sifariş Tamamlandı!", `Sifarişiniz (#${order.id.slice(-6)}) təsdiqləndi.`, 'success');
       
-      // Handle Balance Topup Completion
       if (order.items.some(i => i.type === ProductType.BALANCE)) {
          const targetUser = usersList.find(u => u.id === order.userId);
          if(targetUser) {
              const updatedTarget = { ...targetUser, balance: targetUser.balance + order.totalPrice };
              setUsersList(prev => prev.map(u => u.id === order.userId ? updatedTarget : u));
-             // If it's the current user, update session
              if(user && user.id === order.userId) setUser(updatedTarget);
          }
          sendNotification(order.userId, "Balans Artırıldı", `${order.totalPrice} AZN balansınıza əlavə olundu.`, 'success');
@@ -618,6 +628,7 @@ export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
     logActivity('Order Cancelled', `Order #${orderId} ləğv edildi.`, 'error');
   };
 
+  // ... (Other admin functions same as before) ...
   const addProduct = (product: Product) => { setProducts(prev => [...prev, product]); logActivity('Product Added', product.title); }
   const addProducts = (newProducts: Product[]) => setProducts(prev => [...prev, ...newProducts]);
   const deleteProduct = (productId: string) => { setProducts(prev => prev.filter(p => p.id !== productId)); logActivity('Product Deleted', productId); }
@@ -639,7 +650,6 @@ export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
   const addAgreement = (agreement: Agreement) => setAgreements(prev => [...prev, agreement]);
   const deleteAgreement = (id: string) => setAgreements(prev => prev.filter(a => a.id !== id));
   
-  // Page Functions
   const addPage = (page: Page) => { setPages(prev => [...prev, page]); logActivity('Page Added', page.title); };
   const updatePage = (id: string, page: Partial<Page>) => { setPages(prev => prev.map(p => p.id === id ? { ...p, ...page } : p)); logActivity('Page Updated', id); };
   const deletePage = (id: string) => { setPages(prev => prev.filter(p => p.id !== id)); logActivity('Page Deleted', id); };
@@ -657,7 +667,6 @@ export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
   const toggleCommentApproval = (id: string) => setComments(prev => prev.map(c => c.id === id ? {...c, isApproved: !c.isApproved} : c));
   const deleteComment = (id: string) => setComments(prev => prev.filter(c => c.id !== id));
 
-  // Hero Slides Logic
   const addHeroSlide = (slide: HeroSlide) => { setHeroSlides(prev => [...prev, slide]); logActivity('Hero Slide Added', slide.title); }
   const deleteHeroSlide = (id: string) => { setHeroSlides(prev => prev.filter(s => s.id !== id)); logActivity('Hero Slide Deleted', id); }
 
@@ -667,6 +676,7 @@ export const AppProvider = ({ children }: { children?: React.ReactNode }) => {
       products, categories, orders, paymentMethods, promoCodes, siteSettings, cart, notifications,
       stocks, activityLogs,
       blogs, agreements, comments, heroSlides, pages,
+      isCartOpen, openCart, closeCart,
       login, register, logout, requestPasswordReset, updateUserProfile, adminUpdateUserPassword, toggleUserBan, generateResetLink, confirmPasswordReset, changePassword,
       addToCart, updateCartQuantity, removeFromCart, clearCart,
       placeOrder, placeBalanceOrder, processOrder, completeOrder, cancelOrder, updateUserBalance, markNotificationRead, clearNotifications,
