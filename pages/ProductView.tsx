@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
@@ -73,7 +74,7 @@ const ProductView = () => {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-10 px-4">
+    <div className="min-h-screen pt-6 pb-10 px-4">
       <div className="max-w-6xl mx-auto">
         <button onClick={() => navigate('/')} className="flex items-center text-gray-400 hover:text-white mb-8 group transition-colors">
             <div className="bg-white/5 p-2 rounded-full mr-2 group-hover:bg-white/10">

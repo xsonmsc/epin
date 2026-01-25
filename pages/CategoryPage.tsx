@@ -42,7 +42,7 @@ const CategoryPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gaming-dark pb-20 pt-28 px-4">
+    <div className="min-h-screen bg-gaming-dark pb-20 pt-6 px-4">
         <div className="max-w-7xl mx-auto">
             {/* Breadcrumb / Back */}
             <button onClick={() => navigate('/')} className="flex items-center text-gray-400 hover:text-white mb-6 group transition-colors">

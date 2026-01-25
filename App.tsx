@@ -30,15 +30,14 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
   const isAuthPage = location.pathname === '/auth';
 
   // FIX: 
-  // Desktop Header (1 row ~80px) -> pt-20
-  // Mobile Header (2 rows ~112px) -> pt-[112px]
-  // Mobile Bottom Nav (~64px + safe area) -> pb-[80px]
+  // Desktop Header (1 row ~64px) -> pt-16
+  // Mobile Header (2 rows packed tight ~105px) -> pt-[105px]
   
   return (
     <div className="flex flex-col min-h-screen">
       {!isAdminPage && !isAuthPage && <Navbar />}
       
-      <main className={`flex-grow relative ${!isAdminPage && !isAuthPage ? 'pt-[112px] md:pt-20 pb-[80px] md:pb-0' : ''}`}>
+      <main className={`flex-grow relative ${!isAdminPage && !isAuthPage ? 'pt-[105px] md:pt-16 pb-[80px] md:pb-0' : ''}`}>
         {children}
       </main>
       

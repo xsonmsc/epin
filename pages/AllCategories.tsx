@@ -19,7 +19,7 @@ const AllCategories = () => {
     });
 
   return (
-    <div className="min-h-screen bg-gaming-dark pt-32 pb-24 px-4">
+    <div className="min-h-screen bg-gaming-dark pt-6 pb-24 px-4">
         <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
                 <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-wider">

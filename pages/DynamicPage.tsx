@@ -1,6 +1,5 @@
 
-import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
 import { FileText, ArrowLeft } from 'lucide-react';
 
@@ -22,7 +21,7 @@ const DynamicPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gaming-dark pt-32 pb-20 px-4">
+    <div className="min-h-screen bg-gaming-dark pt-6 pb-20 px-4">
         <div className="max-w-4xl mx-auto">
             {/* Header */}
             <div className="text-center mb-12">

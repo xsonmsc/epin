@@ -7,7 +7,7 @@ const Rules = () => {
   const { agreements } = useApp();
 
   return (
-    <div className="min-h-screen bg-gaming-dark pt-32 pb-20 px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gaming-dark pt-6 pb-20 px-4 relative overflow-hidden">
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-[60vh] bg-gradient-to-b from-primary/10 to-transparent pointer-events-none" />
       

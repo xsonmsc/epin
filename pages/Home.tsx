@@ -38,10 +38,10 @@ const Home = () => {
   const popularCategories = categories.filter(c => c.isPopular).slice(0, 4); 
 
   return (
-    <div className="min-h-screen pb-20 pt-20">
+    <div className="min-h-screen pb-20">
       
       {/* 1. BRAND STRIP (Categories) - Horizontal Scroll with Arrows */}
-      <div id="categories" className="max-w-7xl mx-auto px-4 mb-8 relative group">
+      <div id="categories" className="max-w-7xl mx-auto px-4 mb-8 relative group pt-6">
          
          {/* Left Arrow */}
          <button 
