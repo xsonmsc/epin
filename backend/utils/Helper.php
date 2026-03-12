@@ -15,7 +15,17 @@ class Helper {
 
     public static function validate($data, $fields) {
         foreach ($fields as $field) {
-            if (!isset($data[$field]) || empty(trim($data[$field]))) {
+            if (!array_key_exists($field, $data)) {
+                self::sendResponse("error", "Missing required field: $field", [], 400);
+            }
+            $value = $data[$field];
+            if (is_string($value) && trim($value) === "") {
+                self::sendResponse("error", "Missing required field: $field", [], 400);
+            }
+            if (is_array($value) && count($value) === 0) {
+                self::sendResponse("error", "Missing required field: $field", [], 400);
+            }
+            if (is_null($value)) {
                 self::sendResponse("error", "Missing required field: $field", [], 400);
             }
         }
