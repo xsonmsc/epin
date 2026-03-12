@@ -6,46 +6,24 @@ class ProductController {
     private $db;
 
     public function __construct() {
-        $this->db = new Database();
+        $database = new Database();
+        $this->db = $database->getConnection();
     }
 
     public function getAll() {
-        $products = $this->db->aggregate("products", [
-            ["\$sort" => ["id" => -1]],
-            [
-                "\$lookup" => [
-                    "from" => "categories",
-                    "localField" => "category_id",
-                    "foreignField" => "id",
-                    "as" => "category"
-                ]
-            ],
-            [
-                "\$unwind" => [
-                    "path" => "\$category",
-                    "preserveNullAndEmptyArrays" => true
-                ]
-            ],
-            [
-                "\$addFields" => [
-                    "category_name" => ["\$ifNull" => ["\$category.name", null]]
-                ]
-            ],
-            [
-                "\$project" => [
-                    "category" => 0
-                ]
-            ]
-        ]);
-
+        $query = "SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id ORDER BY p.id DESC";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        $products = $stmt->fetchAll();
         Helper::sendResponse("success", "Products fetched", $products);
     }
 
     public function getOne($id) {
-        $product = $this->db->findOne("products", ["id" => (int) $id]);
-
+        $stmt = $this->db->prepare("SELECT * FROM products WHERE id = ?");
+        $stmt->execute([$id]);
+        $product = $stmt->fetch();
+        
         if ($product) {
-            unset($product['_id']);
             Helper::sendResponse("success", "Product found", $product);
         } else {
             Helper::sendResponse("error", "Product not found", [], 404);

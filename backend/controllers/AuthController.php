@@ -6,7 +6,8 @@ class AuthController {
     private $db;
 
     public function __construct() {
-        $this->db = new Database();
+        $database = new Database();
+        $this->db = $database->getConnection();
     }
 
     public function register() {
@@ -14,52 +15,47 @@ class AuthController {
         Helper::validate($data, ['name', 'email', 'password']);
 
         // Check if email exists
-        $existing = $this->db->findOne("users", ["email" => $data['email']]);
-        if ($existing) {
-            Helper::sendResponse("error", "Bu email artÄ±q qeydiyyatdan keÃ§ib.", [], 409);
+        $stmt = $this->db->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->execute([$data['email']]);
+        if ($stmt->rowCount() > 0) {
+            Helper::sendResponse("error", "Bu email artıq qeydiyyatdan keçib.", [], 409);
         }
 
         // Hash Password
         $password_hash = password_hash($data['password'], PASSWORD_BCRYPT);
-
-        $userId = $this->db->getNextSequence("users");
-        $this->db->insertOne("users", [
-            "id" => $userId,
-            "name" => $data['name'],
-            "email" => $data['email'],
-            "phone" => $data['phone'] ?? null,
-            "password_hash" => $password_hash,
-            "balance" => 0,
-            "is_banned" => false,
-            "created_at" => new MongoDB\BSON\UTCDateTime()
-        ]);
-
-        Helper::sendResponse("success", "Qeydiyyat uÄŸurla tamamlandÄ±.");
+        
+        $stmt = $this->db->prepare("INSERT INTO users (name, email, phone, password_hash) VALUES (?, ?, ?, ?)");
+        if ($stmt->execute([$data['name'], $data['email'], $data['phone'] ?? null, $password_hash])) {
+            Helper::sendResponse("success", "Qeydiyyat uğurla tamamlandı.");
+        } else {
+            Helper::sendResponse("error", "Sistem xətası.", [], 500);
+        }
     }
 
     public function login() {
         $data = Helper::getInput();
         Helper::validate($data, ['email', 'password']);
 
-        $user = $this->db->findOne("users", ["email" => $data['email']]);
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$data['email']]);
+        $user = $stmt->fetch();
 
-        if ($user && isset($user['password_hash']) && password_verify($data['password'], $user['password_hash'])) {
-            if (!empty($user['is_banned'])) {
-                Helper::sendResponse("error", "HesabÄ±nÄ±z bloklanÄ±b.", [], 403);
+        if ($user && password_verify($data['password'], $user['password_hash'])) {
+            if ($user['is_banned']) {
+                Helper::sendResponse("error", "Hesabınız bloklanıb.", [], 403);
             }
 
-            // Real tÉ™tbiqdÉ™ burada JWT Token yaradÄ±n
-            $token = bin2hex(random_bytes(32));
-
-            unset($user['password_hash']); // ÅžifrÉ™ni cavabdan silin
-            unset($user['_id']);
-
-            Helper::sendResponse("success", "GiriÅŸ uÄŸurlu.", [
+            // Real tətbiqdə burada JWT Token yaradın
+            $token = bin2hex(random_bytes(32)); 
+            
+            unset($user['password_hash']); // Şifrəni cavabdan silin
+            
+            Helper::sendResponse("success", "Giriş uğurlu.", [
                 "token" => $token,
                 "user" => $user
             ]);
         } else {
-            Helper::sendResponse("error", "Email vÉ™ ya ÅŸifrÉ™ yanlÄ±ÅŸdÄ±r.", [], 401);
+            Helper::sendResponse("error", "Email və ya şifrə yanlışdır.", [], 401);
         }
     }
 }
