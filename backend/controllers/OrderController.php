@@ -113,7 +113,7 @@ class OrderController {
             $this->db->updateOne("orders", ["id" => $orderId], ["\$set" => ["delivered_content" => $deliveredContent]]);
         }
 
-        Helper::sendResponse("success", "SifariÅŸ yaradÄ±ldÄ±", ["order_id" => $orderId, "status" => $status]);
+        Helper::sendResponse("success", "SifariÅŸ yaradÄ±ldÄ±", ["order_id" => $orderId, "order_status" => $status]);
     }
 }
 ?>
